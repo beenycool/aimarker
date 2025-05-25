@@ -28,10 +28,6 @@ const nextConfig = {
     const reactPath = path.dirname(require.resolve('react/package.json'));
     config.resolve.alias = {
       ...config.resolve.alias,
-      'react': reactPath,
-      'react-dom': path.dirname(require.resolve('react-dom/package.json')),
-      'react/jsx-runtime': path.join(reactPath, 'jsx-runtime'),
-      'react/cache': path.resolve(__dirname, 'lib/react-cache.js')
     };
     
     return config;
