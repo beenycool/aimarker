@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
-const isStaticExport = process.env.IS_STATIC_EXPORT === 'true';
 const path = require('path');
 
 const nextConfig = {
   reactStrictMode: true,
-  // Use static export only when IS_STATIC_EXPORT=true
-  ...(isStaticExport ? { 
+  // Use static export for Cloudflare Pages
+  ...(process.env.CF_PAGES === '1' ? { 
     output: 'export',
     images: { unoptimized: true }
   } : {}),

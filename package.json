@@ -15,7 +15,8 @@
     "unified-dev": "nodemon server-start.js",
     "unified-build": "next build && npm run start",
     "postinstall": "node fix-dependencies.js",
-    "render-build": "npm run build && node build-frontend.js"
+    "render-build": "npm run build && node build-frontend.js",
+    "cloudflare-build": "cross-env CF_PAGES=1 next build"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.10",
