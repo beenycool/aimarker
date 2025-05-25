@@ -37,23 +37,6 @@ export function middleware(request) {
     return adjustPermissionsPolicy(NextResponse.next());
   }
 
-  // For WebSocket requests to the chess socket endpoint
-  if (pathname.startsWith('/api/chess-socket') && 
-      request.headers.get('upgrade') === 'websocket') {
-    // Let the API route handle WebSocket upgrades
-    return adjustPermissionsPolicy(NextResponse.next());
-  }
-
-  // For normal API requests
-  if (pathname.startsWith('/api/chess-socket')) {
-    // Set CORS headers for API requests
-    const response = NextResponse.next();
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    return adjustPermissionsPolicy(response);
-  }
-
   // Handle 404s for GitHub Pages by redirecting to the correct path
   if (pathname.endsWith('.html') || 
       pathname.endsWith('/')) {
@@ -152,9 +135,7 @@ export const config = {
     '/auth/:path*',
     '/api/github/:path*',
     '/api/chat/:path*',
-    '/api/chess-socket/:path*',
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    '/api/auth/user',
-    '/admin/:path*'
+    '/api/auth/user'
   ],
 }; 

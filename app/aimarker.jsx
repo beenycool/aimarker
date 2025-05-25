@@ -2075,19 +2075,12 @@ const AIMarker = () => {
   }, [
     answer, question, subject, examBoard, questionType, userType, markScheme, totalMarks,
     textExtract, relevantMaterial, selectedModel, tier, 
-    // Removed allSubjects, API_BASE_URL as they are outer scope values
-    // Removed lastRequestDate, lastRequestTime, setDailyRequests, setLastRequestDate as they are not used directly
     modelLastRequestTimes, consumeToken,
-    buildSystemPrompt, buildUserPrompt, // Assuming these are stable or correctly memoized
-    relevantMaterialImage, relevantMaterialImageBase64, // Added image dependencies
-    enableThinkingBudget, thinkingBudget, // Added thinking budget dependencies
-    // No need for setFeedback, setGrade etc. here as they are handled by stream or useEffect
-    setLoading, setActiveTab, 
-    setModelLastRequestTimes, autoMaxTokens, maxTokens, 
-    setSelectedModel, // Keep if used in onRetryFallback
-    checkBackendStatus, // Added dependency
-    setCurrentModelForRequest,
-    handleProcessImage // Add handleProcessImage dependency to fix the warning
+    buildSystemPrompt, buildUserPrompt,
+    relevantMaterialImage, relevantMaterialImageBase64,
+    enableThinkingBudget, thinkingBudget,
+    autoMaxTokens, maxTokens,
+    checkBackendStatus, handleProcessImage, setCurrentModelForRequest // Added missing dependencies
   ]);
 
   // useEffect for post-processing feedback after streaming is complete and saving to history

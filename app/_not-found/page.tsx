@@ -1,5 +1,6 @@
 import { Viewport } from "next";
 import Link from "next/link";
+import { safeCache } from "@/lib/cache-utils";
 
 export const viewport: Viewport = {
   width: "device-width",
