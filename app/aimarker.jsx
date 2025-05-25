@@ -2086,7 +2086,8 @@ const AIMarker = () => {
     setModelLastRequestTimes, autoMaxTokens, maxTokens, 
     setSelectedModel, // Keep if used in onRetryFallback
     checkBackendStatus, // Added dependency
-    setCurrentModelForRequest
+    setCurrentModelForRequest,
+    handleProcessImage // Add handleProcessImage dependency to fix the warning
   ]);
 
   // useEffect for post-processing feedback after streaming is complete and saving to history

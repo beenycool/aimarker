@@ -1,12 +1,16 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
 
+const isCloudflarePages = process.env.CF_PAGES === '1';
+
 const nextConfig = {
   reactStrictMode: true,
-  // Use static export for Cloudflare Pages
-  ...(process.env.CF_PAGES === '1' ? { 
+  // For Cloudflare Pages, use static export
+  ...(isCloudflarePages ? { 
     output: 'export',
-    images: { unoptimized: true }
+    images: { unoptimized: true },
+    distDir: '.cloudflare_dist',
+    trailingSlash: true,
   } : {}),
   images: {
     unoptimized: true
@@ -18,7 +22,9 @@ const nextConfig = {
     // Use environment variables or default values
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://beenycool-github-io.onrender.com',
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY || '',
-    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com'
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
+    // Pass CF_PAGES to the client to help with conditional logic
+    NEXT_PUBLIC_CF_PAGES: isCloudflarePages ? '1' : '0'
   },
   webpack: (config, { dev, isServer }) => {
     // Add optimization settings
@@ -43,11 +49,12 @@ const nextConfig = {
     
     return config;
   },
-  // Remove experimental settings that may cause issues with static builds
-  experimental: {},
+  // Set experimental options correctly
+  experimental: {
+    // Empty experimental settings to avoid errors
+  },
   
   // For App Router, we need to explicitly handle route generation
-  // This excludes API routes and dynamic routes
   staticPageGenerationTimeout: 300,
 }
 
