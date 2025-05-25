@@ -328,16 +328,6 @@ const TodoComponent = () => {
     return b.createdAt - a.createdAt;
   });
 
-  // Get priority color
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'text-red-500 dark:text-red-400';
-      case 'medium': return 'text-yellow-500 dark:text-yellow-400';
-      case 'low': return 'text-green-500 dark:text-green-400';
-      default: return '';
-    }
-  };
-
   // Get priority badge color
   const getPriorityBadgeColor = (priority) => {
     switch (priority) {

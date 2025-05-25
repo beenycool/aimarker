@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-static';
 
 // Handle GET requests for GitHub completions
-export async function GET(request) {
+export async function GET() {
   // Redirect to backend server
   return new NextResponse(
     JSON.stringify({
@@ -28,7 +28,7 @@ export async function GET(request) {
 }
 
 // Handle POST requests for GitHub completions
-export async function POST(request) {
+export async function POST() {
   // Redirect to backend server
   return new NextResponse(
     JSON.stringify({
@@ -47,7 +47,7 @@ export async function POST(request) {
   );
 }
 
-export async function OPTIONS(request) {
+export async function OPTIONS() {
   // Handle preflight requests
   return new NextResponse(null, {
     status: 204,

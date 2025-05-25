@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+import PropTypes from "prop-types";
 import {
   Dialog,
   DialogContent,
@@ -65,4 +67,9 @@ export function KeyboardShortcuts({ open, onOpenChange }) {
       </DialogContent>
     </Dialog>
   );
-} 
+}
+
+KeyboardShortcuts.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onOpenChange: PropTypes.func.isRequired
+}; 

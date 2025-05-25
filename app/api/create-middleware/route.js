@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // Add static export for compatibility with static builds
 export const dynamic = 'force-static';
 
-export async function POST(request) {
+export async function POST() {
   // For GitHub Pages, just return success without doing anything
   return NextResponse.json({ 
     success: true,
@@ -15,7 +15,7 @@ export async function POST(request) {
   });
 }
 
-export async function OPTIONS(request) {
+export async function OPTIONS() {
   // Handle preflight requests for CORS
   return new NextResponse(null, {
     status: 204,
