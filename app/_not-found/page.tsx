@@ -2,16 +2,6 @@ import React from "react";
 import { Viewport } from "next";
 import Link from "next/link";
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" }
-  ]
-};
-
 export default function NotFoundPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] text-center px-4">

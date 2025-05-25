@@ -1426,6 +1426,7 @@ const AIMarker = () => {
       const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
+        cache: 'no-store'
       });
       
       if (!response.ok) {
@@ -1877,7 +1878,7 @@ const AIMarker = () => {
     setProcessingProgress("Sending request to AI model...");
     setSuccess({ message: `Processing with ${AI_MODELS.find(m => m.value === currentModelForRequestRef.current)?.label || currentModelForRequestRef.current}...` });
     
-          try {        // Record user event - with error handling for missing endpoint        try {          const eventApiUrl = constructApiUrl('auth/events');          console.log('Sending event to:', eventApiUrl);                    const eventResponse = await fetch(eventApiUrl, {            method: 'POST',            headers: { 'Content-Type': 'application/json' },            body: JSON.stringify({              eventType: 'question_submitted_stream',              eventData: {                model: currentModelForRequestRef.current,                questionLength: question?.length || 0,                answerLength: answer?.length || 0,                subject: subject              }            })          });                    if (!eventResponse.ok) {            console.warn(`Event recording failed with status: ${eventResponse.status}`);            // Continue with the main request even if event recording fails          }        } catch (eventError) {          console.warn("Failed to record user event:", eventError);          // For GitHub Pages static export, this is expected and we can ignore it          console.log('Note: In static export mode, some API failures are expected');        }
+          try {        // Record user event - with error handling for missing endpoint        try {          const eventApiUrl = constructApiUrl('auth/events');          console.log('Sending event to:', eventApiUrl);                    const eventResponse = await fetch(eventApiUrl, {            method: 'POST',            headers: { 'Content-Type': 'application/json' },            body: JSON.stringify({              eventType: 'question_submitted_stream',              eventData: {                model: currentModelForRequestRef.current,                questionLength: question?.length || 0,                answerLength: answer?.length || 0,                subject: subject              }            }),            cache: 'no-store'          });                    if (!eventResponse.ok) {            console.warn(`Event recording failed with status: ${eventResponse.status}`);            // Continue with the main request even if event recording fails          }        } catch (eventError) {          console.warn("Failed to record user event:", eventError);          // For GitHub Pages static export, this is expected and we can ignore it          console.log('Note: In static export mode, some API failures are expected');        }
       
       const requestBodyPayload = {
         model: currentModelForRequestRef.current.startsWith("openai/") || currentModelForRequestRef.current.startsWith("xai/") 
@@ -1916,7 +1917,7 @@ const AIMarker = () => {
       
       console.log('Sending completions request to:', completionsApiUrl);
       
-      const response = await fetch(completionsApiUrl, {        method: 'POST',        headers: {          'Content-Type': 'application/json',          'Accept': 'text/event-stream',        },        body: JSON.stringify(requestBodyPayload),      });
+      const response = await fetch(completionsApiUrl, {        method: 'POST',        headers: {          'Content-Type': 'application/json',          'Accept': 'text/event-stream',        },        body: JSON.stringify(requestBodyPayload),        cache: 'no-store'      });
 
       if (!response.ok) {
         const errorStatus = response.status;
@@ -2250,7 +2251,8 @@ TOTAL MARKS: ${marksToUse}` : ''}
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(60000)
+            signal: AbortSignal.timeout(60000),
+            cache: 'no-store'
           });
           
           // If we get a 400 error with the specific model ID, try the fallback endpoint
@@ -2283,7 +2285,8 @@ TOTAL MARKS: ${marksToUse}` : ''}
                   ],
                   temperature: 0.3
                 }),
-                signal: AbortSignal.timeout(60000)
+                signal: AbortSignal.timeout(60000),
+                cache: 'no-store'
               });
             } else {
               throw new Error(`Mark scheme generation failed with Gemini API: ${errorText}`);
@@ -2320,7 +2323,8 @@ TOTAL MARKS: ${marksToUse}` : ''}
             temperature: 0.7,
             top_p: 1.0
           }),
-          signal: AbortSignal.timeout(60000) // 60 second timeout
+          signal: AbortSignal.timeout(60000), // 60 second timeout
+          cache: 'no-store'
         });
       } else {
         const chatApiUrl = constructApiUrl('chat/completions');
@@ -2337,7 +2341,8 @@ TOTAL MARKS: ${marksToUse}` : ''}
             ],
             temperature: 0.3
           }),
-          signal: AbortSignal.timeout(60000) // 60 second timeout
+          signal: AbortSignal.timeout(60000), // 60 second timeout
+          cache: 'no-store'
         });
       }
       
@@ -2691,6 +2696,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
             temperature: 0.7,
             top_p: 1.0
           }),
+          cache: 'no-store'
         });
       } else {
         // Standard API for other models
@@ -2703,6 +2709,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
             max_tokens: autoMaxTokens ? undefined : maxTokens, 
             temperature: 0.7
           }),
+          cache: 'no-store'
         });
       }
 
@@ -3122,7 +3129,8 @@ Please respond to their question clearly and constructively. Keep your answer co
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(requestBody),
-              signal: AbortSignal.timeout(60000)
+              signal: AbortSignal.timeout(60000),
+              cache: 'no-store'
             });
             successFollowUp = true; // If fetch is successful, mark as success
           } catch (error) {
@@ -3166,7 +3174,8 @@ Please respond to their question clearly and constructively. Keep your answer co
             top_p: 1.0
           }),
           // Add a timeout
-          signal: AbortSignal.timeout(60000)
+          signal: AbortSignal.timeout(60000),
+          cache: 'no-store'
         });
       } else {
         // Standard API request for other models
@@ -3191,7 +3200,8 @@ Please respond to their question clearly and constructively. Keep your answer co
             temperature: 0.7
           }),
           // Add a timeout
-          signal: AbortSignal.timeout(60000)
+          signal: AbortSignal.timeout(60000),
+          cache: 'no-store'
         });
       }
       
@@ -3257,7 +3267,7 @@ Please respond to their question clearly and constructively. Keep your answer co
     }
   };
 
-      // Add a function to create a middleware API endpoint in Next.js    const createMiddlewareApiEndpoint = async () => {        try {            // Check if we're running in a browser environment            if (typeof window === 'undefined') return false;                        // Check if we're in static export mode            const isStaticExport = process.env.IS_STATIC_EXPORT === 'true';                        if (isStaticExport) {                console.log('Running in static export mode - API calls redirected to backend');        console.log(`Using API base URL: ${API_BASE_URL}`);        return true;            }                        try {        // Only try to use local API in development mode        const response = await fetch('/api/create-middleware', {                  method: 'POST',                  headers: {                      'Content-Type': 'application/json',                  },                  body: JSON.stringify({                      type: 'api_middleware',                      endpoints: ['auth/events', 'github/completions', 'chat/completions']                  })              });                            if (response.ok) {                  console.log('Successfully created middleware API endpoints');                  return true;              }      } catch (localApiError) {        console.warn('Local API middleware creation failed, falling back to remote API:', localApiError.message);                // If local API fails, try to check if the remote API is available        try {          const healthCheckUrl = constructApiUrl('health');          const healthCheck = await fetch(healthCheckUrl, {             method: 'GET',            headers: { 'Content-Type': 'application/json' }          });                    if (healthCheck.ok) {            console.log('Remote API is available, will use it instead of local API');            return true;          }        } catch (remoteApiError) {          console.error('Remote API health check failed:', remoteApiError.message);        }      }            return false;        } catch (error) {            console.error('Failed to create middleware API endpoint:', error);            // In static export, we want to gracefully handle this error            if (process.env.IS_STATIC_EXPORT === 'true') {                console.log('Running in static export mode - ignoring API middleware creation failure');                return true;            }            return false;        }    };
+      // Add a function to create a middleware API endpoint in Next.js    const createMiddlewareApiEndpoint = async () => {        try {            // Check if we're running in a browser environment            if (typeof window === 'undefined') return false;                        // Check if we're in static export mode            const isStaticExport = process.env.IS_STATIC_EXPORT === 'true';                        if (isStaticExport) {                console.log('Running in static export mode - API calls redirected to backend');        console.log(`Using API base URL: ${API_BASE_URL}`);        return true;            }                        try {        // Only try to use local API in development mode        const response = await fetch('/api/create-middleware', {                  method: 'POST',                  headers: {                      'Content-Type': 'application/json',                  },                  body: JSON.stringify({                      type: 'api_middleware',                      endpoints: ['auth/events', 'github/completions', 'chat/completions']                  }),                  cache: 'no-store'              });                            if (response.ok) {                  console.log('Successfully created middleware API endpoints');                  return true;              }      } catch (localApiError) {        console.warn('Local API middleware creation failed, falling back to remote API:', localApiError.message);                // If local API fails, try to check if the remote API is available        try {          const healthCheckUrl = constructApiUrl('health');          const healthCheck = await fetch(healthCheckUrl, {             method: 'GET',            headers: { 'Content-Type': 'application/json' },            cache: 'no-store'          });                    if (healthCheck.ok) {            console.log('Remote API is available, will use it instead of local API');            return true;          }        } catch (remoteApiError) {          console.error('Remote API health check failed:', remoteApiError.message);        }      }            return false;        } catch (error) {            console.error('Failed to create middleware API endpoint:', error);            // In static export, we want to gracefully handle this error            if (process.env.IS_STATIC_EXPORT === 'true') {                console.log('Running in static export mode - ignoring API middleware creation failure');                return true;            }            return false;        }    };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
