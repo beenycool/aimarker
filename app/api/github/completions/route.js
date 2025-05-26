@@ -3,9 +3,8 @@ import { NextResponse } from 'next/server';
 // This file is a placeholder that will be used in non-GitHub Pages environments
 // In GitHub Pages, all calls should be redirected to the remote backend by api-helpers.js
 
-// Remove dynamic export for static build
-// export const dynamic = 'force-dynamic';
-export const dynamic = 'force-static';
+// Configure for Edge Runtime for Cloudflare Workers compatibility
+export const runtime = 'edge';
 
 // Handle GET requests for GitHub completions
 export async function GET() {

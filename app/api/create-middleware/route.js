@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 // This endpoint is used to create middleware handlers on the fly
 // It's only needed for local development - on GitHub Pages, this is a no-op
 
-// Add static export for compatibility with static builds
-export const dynamic = 'force-static';
+// Configure for Edge Runtime for Cloudflare Workers compatibility
+export const runtime = 'edge';
 
 export async function POST() {
   // For GitHub Pages, just return success without doing anything
