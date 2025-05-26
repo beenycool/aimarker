@@ -14,7 +14,8 @@
     "backend-dev": "cd backend && nodemon src/index.js",
     "unified-dev": "nodemon server-start.js",
     "unified-build": "next build && npm run start",
-    "cloudflare-build": "npm run build"
+    "cloudflare-build": "npm run build",
+    "cloudflare-pages:build": "NEXT_IGNORE_TYPE_ERRORS=1 NEXT_IGNORE_ESLINT=1 IS_STATIC_EXPORT=true next build"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.10",
