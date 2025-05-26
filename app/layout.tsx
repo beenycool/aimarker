@@ -6,15 +6,6 @@ import { NavigationHeader } from "@/components/navigation-header";
 import ClientLayoutItems from "@/components/layout/client-layout-items";
 
 export const metadata: Metadata = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" }
-  ],
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
   title: "GCSE AI Marker | Intelligent Exam Grading",
   description: "Improve your GCSE exam preparation with AI-powered grading and feedback. Get instant assessment for all GCSE subjects.",
   keywords: "GCSE, exam preparation, AI grading, study tool, revision, exam feedback, education technology",
@@ -57,6 +48,16 @@ export const metadata: Metadata = {
   other: {
     "mobile-web-app-capable": "yes",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" }
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
