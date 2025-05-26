@@ -3,6 +3,7 @@ const path = require('path');
 
 const nextConfig = {
   reactStrictMode: true,
+  output: process.env.IS_STATIC_EXPORT === 'true' ? 'export' : undefined,
   images: {
     unoptimized: true
   },

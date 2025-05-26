@@ -46,7 +46,10 @@ jobs:
           NEXT_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       
       - name: Add .nojekyll file
-        run: touch out/.nojekyll
+        run: |
+          # Ensure the output directory exists and create .nojekyll file
+          mkdir -p out
+          touch out/.nojekyll
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
