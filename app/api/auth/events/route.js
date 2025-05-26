@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-// Add static export for compatibility with static builds
-export const dynamic = 'force-static';
+// Configure for Edge Runtime for Cloudflare Workers compatibility
+export const runtime = 'edge';
 
 export async function POST(req) {
   try {
