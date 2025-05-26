@@ -95,5 +95,8 @@
   },
   "resolutions": {
     "lucide-react": "0.357.0"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
