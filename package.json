@@ -14,7 +14,6 @@
     "backend-dev": "cd backend && nodemon src/index.js",
     "unified-dev": "nodemon server-start.js",
     "unified-build": "next build && npm run start",
-    "postinstall": "node fix-dependencies.js",
     "cloudflare-build": "npm run build"
   },
   "dependencies": {
