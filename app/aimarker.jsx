@@ -1591,19 +1591,16 @@ const AIMarker = () => {
       setExamBoard(savedExamBoard);
     }
 
-    let initialModel = "gemini-2.5-flash-preview-05-20"; // Default model
-    const savedModel = localStorage.getItem(LOCALSTORAGE_KEYS.MODEL);
-    if (savedModel && AI_MODELS.find(m => m.value === savedModel)) {
-      initialModel = savedModel;
+    let modelToLoad = "gemini-2.5-flash-preview-05-20"; // Default model
+    const savedModelFromStorage = localStorage.getItem(LOCALSTORAGE_KEYS.MODEL); // Renamed for clarity
+    if (savedModelFromStorage && AI_MODELS.find(m => m.value === savedModelFromStorage)) {
+      modelToLoad = savedModelFromStorage;
     }
-
-    if (selectedModel !== initialModel) {
-      setSelectedModel(initialModel);
-    }
-    currentModelForRequestRef.current = initialModel;
-    
-    // Set thinking budget based on the effectively loaded model
-    setThinkingBudget(DEFAULT_THINKING_BUDGETS[initialModel] || 1024);
+    // Directly set selectedModel from loaded value or default
+    setSelectedModel(modelToLoad);
+    currentModelForRequestRef.current = modelToLoad;
+    // Set thinking budget based on the loaded model
+    setThinkingBudget(DEFAULT_THINKING_BUDGETS[modelToLoad] || 1024);
 
     const savedTier = localStorage.getItem(LOCALSTORAGE_KEYS.TIER);
     if (savedTier === "higher" || savedTier === "foundation") {
@@ -1611,10 +1608,10 @@ const AIMarker = () => {
     }
 
     // Initialize remaining tokens display
-    const tokens = getRequestTokens(); 
+    const tokens = getRequestTokens();
     setRemainingRequestTokens(tokens.count);
 
-  }, [getRequestTokens, selectedModel]); // Added selectedModel to dependencies
+  }, [getRequestTokens]); // REMOVED selectedModel from dependency array
 
   // Effects for saving preferences to localStorage when they change
   useEffect(() => {
@@ -1636,7 +1633,7 @@ const AIMarker = () => {
     
     // Keep the reference updated with the current model
     currentModelForRequestRef.current = selectedModel;
-  }, [selectedModel, thinkingBudget]);
+  }, [selectedModel]); // REMOVED thinkingBudget from dependency array
 
   useEffect(() => {
     localStorage.setItem(LOCALSTORAGE_KEYS.TIER, tier);

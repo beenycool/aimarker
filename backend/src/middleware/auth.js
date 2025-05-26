@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const ActivityLog = require('../models/ActivityLog');
+// const User = require('../models/User'); // Commented out
+// const ActivityLog = require('../models/ActivityLog'); // Commented out
 
 // Environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
@@ -22,11 +22,11 @@ const authenticateToken = async (req, res, next) => {
         return res.status(403).json({ success: false, message: 'Invalid or expired token' });
       }
       
-      // Check if user exists in database
-      const user = await User.findByPk(decoded.id);
-      if (!user) {
-        return res.status(404).json({ success: false, message: 'User not found' });
-      }
+      // Check if user exists in database - This check needs to be removed or re-thought without a DB
+      // const user = await User.findByPk(decoded.id); // Commented out
+      // if (!user) { // Commented out
+      //   return res.status(404).json({ success: false, message: 'User not found' }); // Commented out
+      // } // Commented out
       
       // Attach user to request object
       req.user = {
@@ -44,30 +44,30 @@ const authenticateToken = async (req, res, next) => {
 };
 
 // Middleware to check admin permissions
-const isAdmin = async (req, res, next) => {
-  try {
-    if (req.user.role !== 'admin') {
-      // Log unauthorized access attempt
-      await ActivityLog.create({
-        userId: req.user.id,
-        username: req.user.username,
-        actionType: 'admin_action',
-        actionDetails: {
-          action: 'unauthorized_access',
-          endpoint: req.originalUrl
-        },
-        performedAt: new Date()
-      });
+// const isAdmin = async (req, res, next) => { // Commented out
+//   try { // Commented out
+//     if (req.user.role !== 'admin') { // Commented out
+//       // Log unauthorized access attempt // Commented out
+//       // await ActivityLog.create({ // Commented out
+//       //   userId: req.user.id, // Commented out
+//       //   username: req.user.username, // Commented out
+//       //   actionType: 'admin_action', // Commented out
+//       //   actionDetails: { // Commented out
+//       //     action: 'unauthorized_access', // Commented out
+//       //     endpoint: req.originalUrl // Commented out
+//       //   }, // Commented out
+//       //   performedAt: new Date() // Commented out
+//       // }); // Commented out
       
-      return res.status(403).json({ success: false, message: 'Access denied. Admin permissions required.' });
-    }
+//       return res.status(403).json({ success: false, message: 'Access denied. Admin permissions required.' }); // Commented out
+//     } // Commented out
     
-    next();
-  } catch (error) {
-    console.error('Admin check error:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-};
+//     next(); // Commented out
+//   } catch (error) { // Commented out
+//     console.error('Admin check error:', error); // Commented out
+//     res.status(500).json({ success: false, message: 'Server error', error: error.message }); // Commented out
+//   } // Commented out
+// }; // Commented out
 
 // Middleware to attach request metrics
 const attachRequestMetrics = (req, res, next) => {
@@ -88,24 +88,24 @@ const attachRequestMetrics = (req, res, next) => {
       if (duration > 500) {
         console.warn(`Slow API call: ${req.method} ${req.path} took ${duration}ms`);
         
-        // Log to database if user is authenticated
-        try {
-          await ActivityLog.create({
-            userId: req.user.id,
-            username: req.user.username,
-            actionType: 'other',
-            actionDetails: {
-              action: 'slow_api_call',
-              method: req.method,
-              path: req.path,
-              duration,
-              statusCode: res.statusCode
-            },
-            performedAt: new Date()
-          });
-        } catch (error) {
-          console.error('Error logging slow API call:', error);
-        }
+        // Log to database if user is authenticated - This needs to be removed
+        // try { // Commented out
+        //   await ActivityLog.create({ // Commented out
+        //     userId: req.user.id, // Commented out
+        //     username: req.user.username, // Commented out
+        //     actionType: 'other', // Commented out
+        //     actionDetails: { // Commented out
+        //       action: 'slow_api_call', // Commented out
+        //       method: req.method, // Commented out
+        //       path: req.path, // Commented out
+        //       duration, // Commented out
+        //       statusCode: res.statusCode // Commented out
+        //     }, // Commented out
+        //     performedAt: new Date() // Commented out
+        //   }); // Commented out
+        // } catch (error) { // Commented out
+        //   console.error('Error logging slow API call:', error); // Commented out
+        // } // Commented out
       }
     }
   });
@@ -115,6 +115,6 @@ const attachRequestMetrics = (req, res, next) => {
 
 module.exports = {
   authenticateToken,
-  isAdmin,
+  // isAdmin, // Removed
   attachRequestMetrics
 }; 

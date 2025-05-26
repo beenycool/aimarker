@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
 const authController = require('../controllers/authController');
-const guildController = require('../controllers/guildController');
-const adminController = require('../controllers/adminController');
-const { authenticateToken, isAdmin } = require('../middleware/auth');
+// const guildController = require('../controllers/guildController'); // Commented out
+// const adminController = require('../controllers/adminController'); // Commented out
+// const { authenticateToken, isAdmin } = require('../middleware/auth'); // isAdmin removed
+const { authenticateToken } = require('../middleware/auth'); // isAdmin removed from imports
 const { globalRateLimiter } = require('../middleware/rateLimit');
 
 // Health check route
@@ -34,33 +35,33 @@ router.post('/auth/logout', authenticateToken, authController.logout);
 router.get('/auth/user', authenticateToken, authController.getCurrentUser);
 router.post('/auth/events', authController.recordUserEvent);
 
-// Guild routes
-router.post('/guilds', authenticateToken, guildController.createGuild);
-router.get('/guilds', guildController.getAllGuilds);
-router.get('/guilds/:id', guildController.getGuildById);
-router.put('/guilds/:id', authenticateToken, guildController.updateGuild);
-router.post('/guilds/:id/join', authenticateToken, guildController.joinGuild);
-router.post('/guilds/:id/leave', authenticateToken, guildController.leaveGuild);
+// Guild routes - Commented out as Guild model and controller are removed/being removed
+// router.post('/guilds', authenticateToken, guildController.createGuild);
+// router.get('/guilds', guildController.getAllGuilds);
+// router.get('/guilds/:id', guildController.getGuildById);
+// router.put('/guilds/:id', authenticateToken, guildController.updateGuild);
+// router.post('/guilds/:id/join', authenticateToken, guildController.joinGuild);
+// router.post('/guilds/:id/leave', authenticateToken, guildController.leaveGuild);
 
-// Admin routes (protected by isAdmin middleware)
-router.get('/admin/users', authenticateToken, isAdmin, adminController.getAllUsers);
-router.get('/admin/users/:id', authenticateToken, isAdmin, adminController.getUserById);
-router.get('/admin/dashboard', authenticateToken, isAdmin, adminController.getSiteActivityDashboard);
-router.get('/admin/sessions', authenticateToken, isAdmin, adminController.getActiveSessions);
-router.post('/admin/sessions/end', authenticateToken, isAdmin, adminController.endUserSession);
+// Admin routes (protected by isAdmin middleware) - Commented out as Admin features are removed
+// router.get('/admin/users', authenticateToken, isAdmin, adminController.getAllUsers);
+// router.get('/admin/users/:id', authenticateToken, isAdmin, adminController.getUserById);
+// router.get('/admin/dashboard', authenticateToken, isAdmin, adminController.getSiteActivityDashboard);
+// router.get('/admin/sessions', authenticateToken, isAdmin, adminController.getActiveSessions);
+// router.post('/admin/sessions/end', authenticateToken, isAdmin, adminController.endUserSession);
 
-// Consolidated leaderboard route for admin
-router.get('/admin/leaderboards', authenticateToken, isAdmin, adminController.getCombinedLeaderboards); // New
+// // Consolidated leaderboard route for admin - Commented out
+// router.get('/admin/leaderboards', authenticateToken, isAdmin, adminController.getCombinedLeaderboards);
 
-// Admin Guild Management Routes
-router.get('/admin/guilds', authenticateToken, isAdmin, adminController.adminGetAllGuilds); // New
-router.post('/admin/guilds', authenticateToken, isAdmin, adminController.adminCreateGuild); // New
-router.put('/admin/guilds/:id', authenticateToken, isAdmin, adminController.adminUpdateGuild); // New
-router.delete('/admin/guilds/:id', authenticateToken, isAdmin, adminController.adminDeleteGuild); // New
+// // Admin Guild Management Routes - Commented out
+// router.get('/admin/guilds', authenticateToken, isAdmin, adminController.adminGetAllGuilds);
+// router.post('/admin/guilds', authenticateToken, isAdmin, adminController.adminCreateGuild);
+// router.put('/admin/guilds/:id', authenticateToken, isAdmin, adminController.adminUpdateGuild);
+// router.delete('/admin/guilds/:id', authenticateToken, isAdmin, adminController.adminDeleteGuild);
 
-// Note: Original specific leaderboard routes can be kept for other purposes or removed if no longer needed
-router.get('/admin/leaderboard/chess', authenticateToken, isAdmin, adminController.getChessLeaderboard);
-router.get('/admin/leaderboard/guilds', authenticateToken, isAdmin, adminController.getGuildLeaderboard);
+// // Note: Original specific leaderboard routes can be kept for other purposes or removed if no longer needed - Commented out
+// router.get('/admin/leaderboard/chess', authenticateToken, isAdmin, adminController.getChessLeaderboard);
+// router.get('/admin/leaderboard/guilds', authenticateToken, isAdmin, adminController.getGuildLeaderboard);
 
 
 // GitHub model API routes
@@ -241,78 +242,58 @@ router.post('/chat/completions', globalRateLimiter, async (req, res) => {
 // Route for Direct Gemini API (e.g., gemini-2.5-flash-preview-05-20)
 router.post('/gemini/generate', globalRateLimiter, async (req, res) => {
   try {
-    const { contents, generationConfig, model } = req.body; // model might be passed from frontend to specify e.g. gemini-2.5-flash-preview-05-20 or a specific version
+    const { contents, generationConfig, model, system_instruction } = req.body; 
     if (!contents || !Array.isArray(contents)) {
       return res.status(400).json({ error: 'Invalid request: contents array is required.' });
     }
 
-    // Determine the model to use. Frontend might send it, or we default to gemini-2.5-flash-preview-05-20 or a configured one.
-    // For gemini-2.5-flash-preview-05-20, the model name is often part of the URL or needs to be correctly specified.
-    // Let's assume the frontend sends the correct model identifier in `req.body.model` if it's not gemini-2.5-flash-preview-05-20.
-    const geminiModel = model || 'gemini-2.5-flash-preview-05-20'; // Default, adjust if needed
+    const geminiModel = model || 'gemini-2.5-flash-preview-05-20'; // Default to a specific Gemini model
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiApiKey) {
-      console.error('GEMINI_API_KEY is not set.');
-      return res.status(500).json({ error: 'Server configuration error: Missing Gemini API Key.' });
+      console.error('Gemini API key not configured');
+      return res.status(500).json({ error: 'Gemini API key not configured on the server.' });
+    }
+    
+    let requestBody = {
+      contents,
+      generationConfig: generationConfig || { temperature: 0.7, topP: 1.0 }, // Add default generationConfig if not provided
+    };
+
+    // Add system_instruction if provided
+    if (system_instruction) {
+      requestBody.system_instruction = system_instruction;
     }
 
-    // Set headers for SSE to the client
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
     const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
-    
+
+    console.log('Sending request to Gemini API:', geminiApiUrl, JSON.stringify(requestBody).substring(0, 200) + '...');
+
     const geminiResponse = await fetch(geminiApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ contents, generationConfig })
+      body: JSON.stringify(requestBody)
     });
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      let errorJson = { message: errorText };
-      try { errorJson = JSON.parse(errorText); } catch (e) { /* ignore */ }
-      console.error('Gemini API error:', geminiResponse.status, errorJson);
-      res.write(`event: error\ndata: ${JSON.stringify({ error: `Gemini API Error (${geminiResponse.status}): ${errorJson.error?.message || errorText}`, status: geminiResponse.status })}\n\n`);
-      res.end();
-      return;
+      console.error('Gemini API error:', geminiResponse.status, errorText);
+      let parsedError = { message: `Gemini API Error (${geminiResponse.status})` };
+      try {
+        parsedError = JSON.parse(errorText).error || parsedError;
+      } catch (e) { /* ignore if not JSON */ }
+      return res.status(geminiResponse.status).json({ error: parsedError.message || errorText });
     }
 
     const geminiData = await geminiResponse.json();
-    let completionText = '';
-
-    // Extract content from Gemini's response structure
-    if (geminiData.candidates && geminiData.candidates[0] && geminiData.candidates[0].content && geminiData.candidates[0].content.parts && geminiData.candidates[0].content.parts[0]) {
-      completionText = geminiData.candidates[0].content.parts[0].text;
-    } else {
-      console.error('Unexpected Gemini API response structure or empty content:', geminiData);
-      res.write(`event: error\ndata: ${JSON.stringify({ error: 'Unexpected Gemini API response structure or empty content' })}\n\n`);
-      res.end();
-      return;
-    }
-
-    // Send the completion text to the client, simulating the OpenAI SSE stream format
-    if (completionText) {
-      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: completionText } }] })}\n\n`);
-    }
-    
-    res.write(`data: [DONE]\n\n`);
-    res.end();
+    console.log('Gemini API response received successfully.');
+    res.json(geminiData);
 
   } catch (error) {
     console.error('Gemini API error in /gemini/generate:', error);
-    if (!res.headersSent) {
-        res.status(500).json({ error: error.message });
-    } else {
-        const errorMessage = (typeof error.message === 'string') ? error.message : JSON.stringify(error);
-        res.write(`event: error\ndata: ${JSON.stringify({ error: errorMessage })}\n\n`);
-        res.end();
-    }
+    res.status(500).json({ error: error.message });
   }
 });
 

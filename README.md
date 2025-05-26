@@ -5,8 +5,6 @@ A unified web application for GCSE exam grading and feedback using AI, with inte
 ## Features
 
 - AI-powered exam grading and feedback
-- Admin dashboard for user management and analytics
-- Chess game functionality
 - Todo list management
 - PostHog analytics integration for tracking user behavior
 
@@ -16,10 +14,8 @@ This application uses a unified server architecture:
 
 - **Frontend**: Next.js React application
 - **Backend**: Express.js server
-- **Database**: PostgreSQL
 - **Analytics**: PostHog
 - **Authentication**: JWT-based auth system
-- **Socket.IO**: For real-time features like chess games
 
 Both frontend and backend run on the same server, simplifying deployment and management.
 
@@ -28,7 +24,6 @@ Both frontend and backend run on the same server, simplifying deployment and man
 ### Prerequisites
 
 - Node.js 18+ and npm
-- PostgreSQL database
 - PostHog account (for analytics)
 
 ### Environment Variables
@@ -36,14 +31,6 @@ Both frontend and backend run on the same server, simplifying deployment and man
 Create a `.env` file in the root directory with the following variables:
 
 ```
-# Database Configuration
-DATABASE_URL=postgres://user:password@localhost:5432/dbname
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=beenycool
-DB_USER=postgres
-DB_PASSWORD=postgres
-
 # JWT Configuration
 JWT_SECRET=your_jwt_secret_key
 JWT_EXPIRES_IN=7d
@@ -74,12 +61,7 @@ NODE_ENV=development
    npm run build
    ```
 
-3. Create admin user:
-   ```
-   node backend/src/scripts/create-admin.js
-   ```
-
-4. Start the unified server:
+3. Start the unified server:
    ```
    npm start
    ```
@@ -109,15 +91,7 @@ This application uses PostHog for analytics. Key events tracked include:
 
 - Page views
 - User logins/registrations
-- Admin actions
 - Feature usage
-
-## Admin Access
-
-Access the admin dashboard at `/admin` with the following credentials:
-
-- Username: beeny
-- Password: Beeny1234!?
 
 ## License
 

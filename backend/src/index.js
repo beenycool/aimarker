@@ -10,8 +10,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 // Load database connection and models
-const { sequelize } = require('./models');
-const { testConnection } = require('./db/config');
+// const { sequelize } = require('./models');
+// const { testConnection } = require('./db/config');
 
 // Try to load OpenAI, but continue if not available
 let OpenAI;
@@ -37,7 +37,7 @@ dotenv.config();
 // Import routes and middleware
 const apiRoutes = require('./routes/api');
 const { attachRequestMetrics } = require('./middleware/auth');
-const chessServer = require('./chess-server');
+// const chessServer = require('./chess-server');
 
 // Initialize Express app
 const app = express();
@@ -47,33 +47,11 @@ const server = http.createServer(app);
 app.set('trust proxy', 1);
 
 // Setup event handling for chess server failures if using child process
-process.on('message', (message) => {
-  if (message.type === 'chess-server-failed') {
-    console.warn('Chess server failed to start. Chess functionality may be limited.');
-  }
-});
-
-// Database connection
-console.log('Attempting to connect to PostgreSQL database...');
-testConnection()
-  .then(success => {
-    if (success) {
-      console.log('PostgreSQL connection successful');
-      // Sync models with database (don't force in production)
-      const shouldForce = process.env.NODE_ENV !== 'production' && process.env.DB_FORCE_SYNC === 'true';
-      return sequelize.sync({ force: shouldForce });
-    } else {
-      console.warn('PostgreSQL connection failed. Starting with limited functionality.');
-      return Promise.resolve();
-    }
-  })
-  .then(() => {
-    console.log('Database sync complete');
-  })
-  .catch(err => {
-    console.error('Database initialization error:', err);
-    console.log('Starting server without database connection. Some features may be limited.');
-  });
+// process.on('message', (message) => {
+//   if (message.type === 'chess-server-failed') {
+//     console.warn('Chess server failed to start. Chess functionality may be limited.');
+//   }
+// });
 
 // PostHog Integration
 let posthog;
@@ -215,17 +193,17 @@ if (process.env.RENDER) {
 app.use(express.static(publicDir));
 
 // Initialize chess server which sets up Socket.io
-const io = socketIo(server, {
-  cors: {
-    origin: '*', // Allow all origins, modify for production
-    methods: ['GET', 'POST']
-  }
-});
+// const io = socketIo(server, {
+//   cors: {
+//     origin: '*', // Allow all origins, modify for production
+//     methods: ['GET', 'POST']
+//   }
+// });
 
 // Pass io instance to chess-server
-if (typeof chessServer.setup === 'function') {
-  chessServer.setup(io);
-}
+// if (typeof chessServer.setup === 'function') {
+//   chessServer.setup(io);
+// }
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
@@ -234,7 +212,7 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     port: process.env.PORT || 3000,
-    database: sequelize.authenticate().then(() => 'connected').catch(() => 'disconnected')
+    // database: sequelize.authenticate().then(() => 'connected').catch(() => 'disconnected')
   });
 });
 
@@ -319,11 +297,12 @@ process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down...');
   server.close(() => {
     console.log('Server closed');
-    sequelize.close().then(() => {
-      console.log('Database connection closed');
-      process.exit(0);
-    });
+    // sequelize.close().then(() => {
+    //   console.log('Database connection closed');
+    //   process.exit(0);
+    // });
+    process.exit(0);
   });
 });
 
-module.exports = { app, server }; 
+module.exports = server; 
