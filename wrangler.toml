@@ -2,8 +2,8 @@ name = "beenycool-ai-gcse-marker"
 compatibility_date = "2025-05-26"
 compatibility_flags = ["nodejs_compat"]
 
-# For Next.js applications, use pages configuration instead of workers
-pages_build_output_dir = ".vercel/output/static"
+# For Next.js applications, use pages configuration
+pages_build_output_dir = ".next"
 
 # Environment variables
 [env.production.vars]
