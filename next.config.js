@@ -36,6 +36,7 @@ const nextConfig = {
     const reactPath = path.dirname(require.resolve('react/package.json'));
     config.resolve.alias = {
       ...config.resolve.alias,
+      '@': path.resolve(__dirname, '.'), // Add alias for @ path
     };
     
     return config;
