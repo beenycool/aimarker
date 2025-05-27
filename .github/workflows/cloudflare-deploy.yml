@@ -1,0 +1,45 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  # Trigger the workflow on push to main branch
+  push:
+    branches: [ main ]
+  # Allow manual triggering of the workflow
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cloudflare Pages
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for Cloudflare Pages
+        run: |
+          npm run build
+          npx @cloudflare/next-on-pages
+
+      - name: Create routes.json for SPA
+        run: |
+          mkdir -p .vercel/output/static
+          echo '{"version":1,"include":["/*"],"exclude":[]}' > .vercel/output/static/_routes.json
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: beenycool-ai-gcse-marker
+          directory: .vercel/output/static
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main 
