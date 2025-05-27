@@ -3,7 +3,8 @@ compatibility_date = "2025-05-26"
 compatibility_flags = ["nodejs_compat"]
 
 # For Next.js applications, use pages configuration
-pages_build_output_dir = ".next"
+pages_build_output_dir = ".vercel/output/static"
+functions = ".vercel/output/functions"
 
 # Environment variables
 [env.production.vars]

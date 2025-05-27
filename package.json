@@ -14,8 +14,8 @@
     "backend-dev": "cd backend && nodemon src/index.js",
     "unified-dev": "nodemon server-start.js",
     "unified-build": "next build && npm run start",
-    "cloudflare-build": "next build",
-    "deploy": "npx wrangler pages deploy",
+    "cloudflare-build": "next build && npx @cloudflare/next-on-pages",
+    "deploy": "npm run cloudflare-build && npx wrangler pages deploy .vercel/output/static",
     "render-build": "next build"
   },
   "dependencies": {
