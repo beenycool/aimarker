@@ -3,7 +3,7 @@ const path = require('path');
 
 const nextConfig = {
   reactStrictMode: true,
-  output: process.env.IS_STATIC_EXPORT === 'true' ? 'export' : undefined,
+  output: process.env.STATIC_EXPORT === 'true' ? 'export' : undefined,
   images: {
     unoptimized: true
   },
@@ -17,6 +17,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Remove exportPathMap since it's not compatible with App Router
+  distDir: '.next',
   env: {
     // Use environment variables or default values
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://beenycool-github-io.onrender.com',
@@ -48,6 +50,22 @@ const nextConfig = {
   
   // For App Router, we need to explicitly handle route generation
   staticPageGenerationTimeout: 300,
+}
+
+// Apply special config for static export
+if (process.env.STATIC_EXPORT === 'true') {
+  // When statically exporting, we need to handle API routes
+  nextConfig.rewrites = async () => {
+    return {
+      beforeFiles: [
+        // Forward API requests to backend
+        {
+          source: '/api/:path*',
+          destination: 'https://beenycool-github-io.onrender.com/api/:path*',
+        },
+      ]
+    };
+  };
 }
 
 module.exports = nextConfig; 
