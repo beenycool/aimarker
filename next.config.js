@@ -16,7 +16,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  distDir: '.next',
+  distDir: 'backend/.next',
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://beenycool-github-io.onrender.com',
   },
@@ -34,7 +34,9 @@ const nextConfig = {
     };
     return config;
   },
-  experimental: {},
+  experimental: {
+    appDir: true
+  },
   staticPageGenerationTimeout: 300,
 }
 
