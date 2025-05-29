@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "cloudflare-build": "npm install && npx rimraf backend/.next && next build ./app && next export ./app"
+    "cloudflare-build": "npm install && npx rimraf backend/.next && npx next build ./app && npx next export ./app"
+  },
+  "dependencies": {
+    "next": "^15.3.2"
   }
 }
