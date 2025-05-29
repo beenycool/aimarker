@@ -16,7 +16,7 @@
     "backend-dev": "cd backend && nodemon src/index.js",
     "unified-dev": "nodemon server-start.js",
     "unified-build": "next build && npm run start",
-    "cloudflare-build": "rmdir /s /q .next && next build && next export",
+    "cloudflare-build": "npx rimraf .next && next build && next export",
     "deploy": "npx wrangler pages deploy .vercel/output/static",
     "render-build": "next build",
     "deploy-cloudflare-windows": "node deploy-cloudflare.js"
