@@ -6,6 +6,8 @@
     "cloudflare-build": "npm install && npx rimraf backend/.next && npx next build ./app && npx next export ./app"
   },
   "dependencies": {
-    "next": "^15.3.2"
+    "next": "^15.3.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }
