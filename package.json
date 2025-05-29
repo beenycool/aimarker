@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "cloudflare-build": "npm install && npx rimraf backend/.next && npx next build ./app && npx next export ./app"
+    "dev": "next dev",
+    "build": "next build",
+    "export": "next export",
+    "build-export": "npm run build && npm run export",
+    "start": "next start",
+    "serve": "npx serve out",
+    "build-local": "node scripts/build-local.js",
+    "cloudflare-build": "npm install && npx rimraf backend/.next && npx next build && npx next export"
   },
   "dependencies": {
     "next": "^15.3.2",

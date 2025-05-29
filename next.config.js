@@ -34,9 +34,7 @@ const nextConfig = {
     };
     return config;
   },
-  experimental: {
-    appDir: true
-  },
+  experimental: {},
   staticPageGenerationTimeout: 300,
 }
 
