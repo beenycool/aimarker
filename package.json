@@ -1,0 +1,8 @@
+{
+  "name": "beenycool.github.io",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "cloudflare-build": "cd backend && npm run cloudflare-build"
+  }
+}
