@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node server-start.js",
+    "start:azure": "node startup.js",
     "dev": "nodemon src/index.js",
     "build": "echo 'No build step required'",
     "test": "echo 'No tests specified'"
@@ -31,7 +32,7 @@
     "nodemon": "^3.1.0"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   },
   "keywords": ["api", "backend", "education", "ai"],
   "author": "Beenycool",
