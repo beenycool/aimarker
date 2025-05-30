@@ -1,39 +1,53 @@
-const mongoose = require('mongoose');
+// In-memory activity log storage
+const activityLogs = [];
+let logIdCounter = 1;
 
-const ActivityLogSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  username: {
-    type: String,
-    required: true
-  },
-  ipAddress: {
-    type: String
-  },
-  userAgent: {
-    type: String
-  },
-  actionType: {
-    type: String,
-    required: true,
-    enum: ['login', 'logout', 'register', 'password_change', 'settings_update', 'profile_update']
-  },
-  actionDetails: {
-    type: Object,
-    default: {}
-  },
-  pageUrl: {
-    type: String
-  },
-  performedAt: {
-    type: Date,
-    default: Date.now
+class ActivityLog {
+  constructor(data) {
+    this._id = data._id || logIdCounter++;
+    this.user = data.user;
+    this.username = data.username;
+    this.ipAddress = data.ipAddress;
+    this.userAgent = data.userAgent;
+    this.actionType = data.actionType;
+    this.actionDetails = data.actionDetails || {};
+    this.pageUrl = data.pageUrl;
+    this.performedAt = data.performedAt || new Date();
   }
-});
 
-const ActivityLog = mongoose.model('ActivityLog', ActivityLogSchema);
+  // Save the activity log
+  async save() {
+    // Update or add log to in-memory storage
+    const existingIndex = activityLogs.findIndex(log => log._id === this._id);
+    if (existingIndex >= 0) {
+      activityLogs[existingIndex] = this;
+    } else {
+      activityLogs.push(this);
+    }
+    
+    return this;
+  }
+
+  // Static methods
+  static create(logData) {
+    const newLog = new ActivityLog(logData);
+    return newLog.save();
+  }
+
+  static find(query) {
+    return Promise.resolve(
+      activityLogs.filter(log => {
+        if (!query) return true;
+        
+        for (const [key, value] of Object.entries(query)) {
+          if (log[key] !== value) {
+            return false;
+          }
+        }
+        return true;
+      })
+    );
+  }
+}
 
 module.exports = ActivityLog;

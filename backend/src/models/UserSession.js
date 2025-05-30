@@ -1,111 +1,85 @@
-const mongoose = require('mongoose');
+// In-memory user session storage
+const sessions = [];
+let sessionIdCounter = 1;
 
-const ScreenCaptureSchema = new mongoose.Schema({
-  timestamp: {
-    type: Date,
-    default: Date.now
-  },
-  imageData: {
-    type: String
-  },
-  pageUrl: {
-    type: String
-  },
-  eventTriggered: {
-    type: String
-  },
-  elementInfo: {
-    type: Object,
-    default: {}
+class UserSession {
+  constructor(data) {
+    this._id = data._id || sessionIdCounter++;
+    this.user = data.user;
+    this.username = data.username;
+    this.sessionId = data.sessionId;
+    this.ipAddress = data.ipAddress;
+    this.userAgent = data.userAgent;
+    this.browser = data.browser;
+    this.operatingSystem = data.operatingSystem;
+    this.startTime = data.startTime || new Date();
+    this.endTime = data.endTime;
+    this.isActive = data.isActive !== undefined ? data.isActive : true;
+    this.totalClicks = data.totalClicks || 0;
+    this.totalKeyPresses = data.totalKeyPresses || 0;
+    this.screenCaptures = data.screenCaptures || [];
+    this.events = data.events || [];
   }
-});
 
-const UserEventSchema = new mongoose.Schema({
-  timestamp: {
-    type: Date,
-    default: Date.now
-  },
-  eventType: {
-    type: String,
-    required: true
-  },
-  details: {
-    type: Object,
-    default: {}
+  // Save the session
+  async save() {
+    const existingIndex = sessions.findIndex(session => session._id === this._id);
+    if (existingIndex >= 0) {
+      sessions[existingIndex] = this;
+    } else {
+      sessions.push(this);
+    }
+    
+    return this;
   }
-});
 
-const UserSessionSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  username: {
-    type: String,
-    required: true
-  },
-  sessionId: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  ipAddress: {
-    type: String
-  },
-  userAgent: {
-    type: String
-  },
-  browser: {
-    type: String
-  },
-  operatingSystem: {
-    type: String
-  },
-  startTime: {
-    type: Date,
-    default: Date.now
-  },
-  endTime: {
-    type: Date
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  totalClicks: {
-    type: Number,
-    default: 0
-  },
-  totalKeyPresses: {
-    type: Number,
-    default: 0
-  },
-  screenCaptures: [ScreenCaptureSchema],
-  events: [UserEventSchema]
-});
+  // Method to add screen capture to session
+  async addScreenCapture(captureData) {
+    this.screenCaptures.push({
+      timestamp: captureData.timestamp || new Date(),
+      imageData: captureData.imageData,
+      pageUrl: captureData.pageUrl,
+      eventTriggered: captureData.eventTriggered,
+      elementInfo: captureData.elementInfo || {}
+    });
+    
+    return this.save();
+  }
 
-// Method to add screen capture to session
-UserSessionSchema.methods.addScreenCapture = function(captureData) {
-  this.screenCaptures.push(captureData);
-  return this.save();
-};
+  // Method to add event to session
+  async addEvent(eventType, details = {}) {
+    this.events.push({
+      timestamp: new Date(),
+      eventType,
+      details
+    });
+    
+    return this.save();
+  }
 
-// Method to add event to session
-UserSessionSchema.methods.addEvent = function(eventType, details = {}) {
-  this.events.push({
-    timestamp: new Date(),
-    eventType,
-    details
-  });
-  return this.save();
-};
+  // Static methods
+  static create(sessionData) {
+    const newSession = new UserSession(sessionData);
+    return newSession.save();
+  }
 
-// Static method to find an active session for a user
-UserSessionSchema.statics.findActiveSessionByUser = function(userId) {
-  return this.findOne({ user: userId, isActive: true });
-};
+  static findOne(query) {
+    return Promise.resolve(
+      sessions.find(session => {
+        for (const [key, value] of Object.entries(query)) {
+          if (session[key] !== value) {
+            return false;
+          }
+        }
+        return true;
+      })
+    );
+  }
 
-const UserSession = mongoose.model('UserSession', UserSessionSchema);
+  // Find an active session for a user
+  static findActiveSessionByUser(userId) {
+    return this.findOne({ user: userId, isActive: true });
+  }
+}
 
 module.exports = UserSession;

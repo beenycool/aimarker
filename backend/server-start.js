@@ -60,48 +60,6 @@ for (const publicDir of publicDirs) {
   }
 }
 
-// Initialize database schema
-async function initializeDatabase() {
-  console.log('Initializing database schema...');
-  
-  // On Render, we might not have a PostgreSQL database yet, so skip this step
-  if (process.env.RENDER && !process.env.DATABASE_URL) {
-    console.log('No DATABASE_URL found, skipping database initialization');
-    return Promise.resolve();
-  }
-  
-  try {
-    // Run the database migration script
-    const migrate = spawn('node', ['src/db/migrate.js'], {
-      env: { ...process.env },
-      stdio: 'inherit'
-    });
-    
-    return new Promise((resolve, reject) => {
-      migrate.on('close', (code) => {
-        if (code === 0) {
-          console.log('Database initialization successful');
-          resolve();
-        } else {
-          console.warn(`Database initialization exited with code ${code}`);
-          // Continue anyway - the app will handle missing tables
-          resolve();
-        }
-      });
-      
-      migrate.on('error', (err) => {
-        console.error('Error running database migration:', err);
-        // Continue anyway
-        resolve();
-      });
-    });
-  } catch (error) {
-    console.error('Error initializing database:', error);
-    // Continue anyway
-    return Promise.resolve();
-  }
-}
-
 async function startServers() {
   console.log('Starting backend services...');
   
@@ -114,9 +72,6 @@ async function startServers() {
     } else {
       console.log(`Running on Render with assigned port: ${process.env.PORT}`);
     }
-    
-    // Initialize database
-    await initializeDatabase();
     
     // Start the main server
     console.log('Starting main server...');
