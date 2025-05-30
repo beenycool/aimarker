@@ -9,8 +9,8 @@ console.log('🔨 Starting local build process...\n');
 try {
   // Clean previous build
   console.log('🧹 Cleaning previous build...');
-  if (fs.existsSync('backend/.next')) {
-    execSync('npx rimraf backend/.next', { stdio: 'inherit' });
+  if (fs.existsSync('.next')) {
+    execSync('npx rimraf .next', { stdio: 'inherit' });
   }
   if (fs.existsSync('out')) {
     execSync('npx rimraf out', { stdio: 'inherit' });
@@ -20,13 +20,9 @@ try {
   console.log('\n📦 Installing dependencies...');
   execSync('npm install', { stdio: 'inherit' });
 
-  // Build the application
+  // Build the application (static export handled by next.config.js)
   console.log('\n🏗️  Building Next.js application...');
   execSync('npx next build', { stdio: 'inherit' });
-
-  // Export static files
-  console.log('\n📤 Exporting static files...');
-  execSync('npx next export', { stdio: 'inherit' });
 
   console.log('\n✅ Build completed successfully!');
   console.log('📁 Static files are in the "out" directory');

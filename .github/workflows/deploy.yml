@@ -28,9 +28,8 @@ jobs:
 
     - name: Build Next.js app
       run: |
-        npx rimraf backend/.next
+        npx rimraf .next out
         npx next build
-        npx next export
 
     - name: Deploy to Cloudflare Pages
       uses: cloudflare/pages-action@v1

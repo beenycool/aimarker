@@ -2,7 +2,7 @@
 const path = require('path');
 
 const nextConfig = {
-  output: 'export', // Add this for static export
+  output: 'export',
   reactStrictMode: true,
   images: {
     unoptimized: true
@@ -16,7 +16,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  distDir: 'backend/.next',
+  distDir: '.next',
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://beenycool-github-io.onrender.com',
   },
