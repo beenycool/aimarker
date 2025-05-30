@@ -9,34 +9,11 @@ const morgan = require('morgan');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
-// Load database connection and models
-// const { sequelize } = require('./models');
-// const { testConnection } = require('./db/config');
-
-// Try to load OpenAI, but continue if not available
-let OpenAI;
-try {
-  OpenAI = require('openai');
-  console.log('OpenAI module loaded successfully');
-} catch (error) {
-  console.warn('OpenAI module not available. Some AI features will be disabled.');
-}
-
-// Try to load node-fetch, but continue if not available
-let fetch;
-try {
-  fetch = require('node-fetch');
-  console.log('node-fetch module loaded successfully');
-} catch (error) {
-  console.warn('node-fetch module not available. Some features will be disabled.');
-}
-
 // Load environment variables
 dotenv.config();
 
 // Import routes and middleware
 const apiRoutes = require('./routes/api');
-const { attachRequestMetrics } = require('./middleware/auth');
 
 // Initialize Express app
 const app = express();
@@ -121,9 +98,6 @@ const apiLimiter = rateLimit({
 
 // Apply rate limiter to all API routes
 app.use('/api', apiLimiter);
-
-// Attach request metrics middleware
-app.use(attachRequestMetrics);
 
 // Use API routes
 app.use('/api', apiRoutes);
