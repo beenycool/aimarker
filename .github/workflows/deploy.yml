@@ -52,32 +52,8 @@ jobs:
         name: static-build
         path: out/
 
-    - name: Check secrets and deploy
-      run: |
-        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] || [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
-          echo "❌ Cloudflare secrets not configured"
-          echo ""
-          echo "To enable automatic deployment:"
-          echo "1. Go to Settings > Secrets and variables > Actions"
-          echo "2. Add CLOUDFLARE_API_TOKEN (your Cloudflare API token)"
-          echo "3. Add CLOUDFLARE_ACCOUNT_ID (your Cloudflare Account ID)"
-          echo ""
-          echo "📥 For manual deployment:"
-          echo "1. Download the 'static-build' artifact from this workflow"
-          echo "2. Extract and upload to Cloudflare Pages dashboard"
-          echo ""
-          echo "📖 See DEPLOYMENT_SETUP.md for detailed setup instructions"
-          exit 0
-        else
-          echo "✅ Cloudflare secrets configured, proceeding with deployment..."
-        fi
-
     - name: Deploy to Cloudflare Pages
-      if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
       uses: cloudflare/pages-action@v1
-      env:
-        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       with:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
