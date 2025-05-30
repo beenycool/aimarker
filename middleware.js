@@ -29,7 +29,7 @@ export function middleware(request) {
   // For static export, we need to handle API routes specially
   if (process.env.STATIC_EXPORT === 'true' && pathname.startsWith('/api/')) {
     // Redirect API routes to the backend
-    const backendUrl = 'https://beenycool-github-io.onrender.com';
+    const backendUrl = 'http://165.232.94.215:3000';
     const apiUrl = new URL(pathname, backendUrl);
     
     // Copy all search parameters
@@ -58,4 +58,4 @@ export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}; 
+};

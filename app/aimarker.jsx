@@ -1417,7 +1417,7 @@ const AIMarker = () => {
       // Always use the remote server for GitHub Pages since GitHub Pages can't handle file uploads
       // The backend server REQUIRES the /api prefix in the URL
       const apiUrl = isGitHubPagesEnv 
-        ? 'https://beenycool-github-io.onrender.com/api/github/completions'
+        ? 'http://165.232.94.215:3000/api/github/completions'
         : constructApiUrl('github/completions');
       
       setProcessingStep("analyzing_content");
@@ -1909,7 +1909,7 @@ const AIMarker = () => {
       // Always use the remote server for GitHub Pages
       // The backend server REQUIRES the /api prefix in the URL
       const completionsApiUrl = isGitHubPagesEnv 
-        ? 'https://beenycool-github-io.onrender.com/api/github/completions'
+        ? 'http://165.232.94.215:3000/api/github/completions'
         : constructApiUrl('github/completions');
       
       console.log('Sending completions request to:', completionsApiUrl);
@@ -2239,7 +2239,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
                      // Always use the remote server for GitHub Pages
            // The backend server REQUIRES the /api prefix in the URL
            const geminiApiUrl = isGitHubPagesEnv 
-             ? 'https://beenycool-github-io.onrender.com/api/gemini/generate'
+             ? 'http://165.232.94.215:3000/api/gemini/generate'
              : constructApiUrl('gemini/generate');
           
           console.log('Sending Gemini generate request to:', geminiApiUrl);
@@ -2301,7 +2301,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
                  // Always use the remote server for GitHub Pages
          // The backend server REQUIRES the /api prefix in the URL
         const githubApiUrl = isGitHubPagesEnv 
-          ? 'https://beenycool-github-io.onrender.com/api/github/completions'
+          ? 'http://165.232.94.215:3000/api/github/completions'
           : constructApiUrl('github/completions');
         
         console.log('Sending GitHub completions request to:', githubApiUrl);

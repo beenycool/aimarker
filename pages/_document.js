@@ -20,7 +20,7 @@ export default function Document() {
               
               // Define critical API helper functions immediately
               if (typeof window !== 'undefined') {
-                const DEFAULT_BACKEND_URL = 'https://beenycool-github-io.onrender.com';
+                const DEFAULT_BACKEND_URL = 'http://165.232.94.215:3000';
                 
                 // Define these functions before any module loading happens
                 window.API_HELPERS.getApiBaseUrl = window.getApiBaseUrl = function() {
@@ -67,4 +67,4 @@ export default function Document() {
       </body>
     </Html>
   )
-} 
+}

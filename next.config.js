@@ -18,7 +18,7 @@ const nextConfig = {
   },
   distDir: '.next',
   env: {
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://beenycool-github-io.onrender.com',
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://165.232.94.215:3000',
   },
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
@@ -38,4 +38,4 @@ const nextConfig = {
   staticPageGenerationTimeout: 300,
 }
 
-module.exports = nextConfig; 
+module.exports = nextConfig;
