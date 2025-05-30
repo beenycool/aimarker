@@ -23,16 +23,26 @@ This guide explains how to set up automatic deployment from GitHub to Cloudflare
    - **Zone** - Zone Settings:Read, Zone:Read (if using custom domain)
 5. Set Account Resources: Include - Your Account
 6. Set Zone Resources: Include - Your Domain (if using custom domain)
-7. Copy the generated token
+7. Click "Continue to summary" → "Create Token"
+8. **IMPORTANT**: Copy the generated token immediately (you won't see it again)
 
 ## Step 2: Configure GitHub Secrets
 
 In your GitHub repository:
 
-1. Go to **Settings** → **Secrets and variables** → **Actions**
-2. Add these repository secrets:
-   - `CLOUDFLARE_API_TOKEN`: Your API token from Step 1
-   - `CLOUDFLARE_ACCOUNT_ID`: Your Account ID from Step 1
+1. Go to your repository on GitHub
+2. Click **Settings** (in the repository menu, not your profile)
+3. In the left sidebar, click **Secrets and variables** → **Actions**
+4. Click **New repository secret** and add:
+   - **Name**: `CLOUDFLARE_API_TOKEN`
+   - **Secret**: Paste your API token from Step 1
+5. Click **Add secret**
+6. Click **New repository secret** again and add:
+   - **Name**: `CLOUDFLARE_ACCOUNT_ID`
+   - **Secret**: Paste your Account ID from Step 1
+7. Click **Add secret**
+
+You should now see both secrets listed in your repository secrets.
 
 ## Step 3: Create Cloudflare Pages Project
 
@@ -90,6 +100,24 @@ If your app needs environment variables:
 
 ## Troubleshooting
 
+### "Input required and not supplied: apiToken" Error
+This means GitHub secrets are not configured properly:
+
+1. **Double-check secret names**: Must be exactly `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+2. **Verify secrets exist**: Go to Settings > Secrets and variables > Actions
+3. **Check API token**: Make sure you copied the full token without extra spaces
+4. **Recreate token**: If still failing, create a new API token with the same permissions
+
+### Manual Deployment (if secrets aren't working)
+1. Go to your GitHub repository
+2. Click **Actions** tab
+3. Click on the latest workflow run
+4. Download the **static-build** artifact
+5. Extract the ZIP file
+6. Go to [Cloudflare Pages](https://dash.cloudflare.com/pages)
+7. Click your project or create new one
+8. Upload the extracted files
+
 ### Build Fails
 - Check the GitHub Actions logs
 - Ensure all dependencies are in `package.json`
@@ -97,8 +125,9 @@ If your app needs environment variables:
 
 ### Deployment Fails
 - Verify your Cloudflare API token has correct permissions
-- Check that the project name matches exactly
+- Check that the project name matches exactly (`beenycool-github-io`)
 - Ensure your account ID is correct
+- Try creating the Pages project manually first
 
 ### Custom Domain Issues
 - DNS changes can take up to 24 hours to propagate

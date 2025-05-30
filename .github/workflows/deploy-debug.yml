@@ -1,0 +1,73 @@
+name: Debug Deployment Setup
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  check-secrets:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check if secrets are configured
+      run: |
+        echo "Checking GitHub Secrets configuration..."
+        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+          echo "❌ CLOUDFLARE_API_TOKEN is not set"
+          echo "Go to Settings > Secrets and variables > Actions"
+          echo "Add CLOUDFLARE_API_TOKEN with your Cloudflare API token"
+        else
+          echo "✅ CLOUDFLARE_API_TOKEN is configured"
+        fi
+        
+        if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+          echo "❌ CLOUDFLARE_ACCOUNT_ID is not set"
+          echo "Go to Settings > Secrets and variables > Actions"
+          echo "Add CLOUDFLARE_ACCOUNT_ID with your Cloudflare Account ID"
+        else
+          echo "✅ CLOUDFLARE_ACCOUNT_ID is configured"
+        fi
+        
+        echo "Repository secrets status check complete"
+
+  build-only:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build Next.js app
+      run: |
+        npx rimraf .next out
+        npx next build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: static-build
+        path: out/
+        retention-days: 7
+
+    - name: Build Summary
+      run: |
+        echo "🎉 Build completed successfully!"
+        echo "📁 Static files generated in 'out' directory"
+        echo "📤 Build artifacts uploaded for manual deployment"
+        echo ""
+        echo "To deploy manually:"
+        echo "1. Download the 'static-build' artifact from this workflow run"
+        echo "2. Extract the files"
+        echo "3. Upload to Cloudflare Pages dashboard manually"
+        echo ""
+        echo "Or configure GitHub secrets to enable automatic deployment:"
+        echo "- CLOUDFLARE_API_TOKEN"
+        echo "- CLOUDFLARE_ACCOUNT_ID"
