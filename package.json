@@ -8,8 +8,7 @@
     "build-export": "npm run build",
     "start": "next start",
     "serve": "npx serve out",
-    "build-local": "node scripts/build-local.js",
-    "cloudflare-build": "npm install && npx rimraf .next out && npx next build"
+    "build-local": "node scripts/build-local.js"
   },
   "dependencies": {
     "next": "^15.3.2",

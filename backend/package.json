@@ -15,11 +15,7 @@
     "backend": "cd backend && node src/index.js",
     "backend-dev": "cd backend && nodemon src/index.js",
     "unified-dev": "nodemon server-start.js",
-    "unified-build": "next build && npm run start",
-    "cloudflare-build": "echo 'This script is no longer used. Run build from root directory instead'",
-    "deploy": "npx wrangler pages deploy .vercel/output/static",
-    "render-build": "next build",
-    "deploy-cloudflare-windows": "node deploy-cloudflare.js"
+    "unified-build": "next build && npm run start"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.10",
@@ -83,7 +79,6 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.12",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "concurrently": "^8.2.2",
@@ -94,8 +89,7 @@
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "html2canvas": "^1.4.1",
-    "nodemon": "^3.1.0",
-    "wrangler": "^4.16.0"
+    "nodemon": "^3.1.0"
   },
   "resolutions": {
     "lucide-react": "0.357.0"

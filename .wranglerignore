@@ -1,2 +1,0 @@
-# Exclude Next.js cache from deployment
-.next/cache/** 

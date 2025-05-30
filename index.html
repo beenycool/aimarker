@@ -24,7 +24,6 @@
 ((e,t,r,n,o,a,i,l)=>{let u=document.documentElement,s=["light","dark"];function c(t){(Array.isArray(e)?e:[e]).forEach(e=>{let r="class"===e,n=r&&a?o.map(e=>a[e]||e):o;r?(u.classList.remove(...n),u.classList.add(a&&a[t]?a[t]:t)):u.setAttribute(e,t)}),l&&s.includes(t)&&(u.style.colorScheme=t)}if(n)c(n);else try{let e=localStorage.getItem(t)||r,n=i&&"system"===e?window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light":e;c(n)}catch(e){}})(
 "class","theme","system",null,["light","dark"],null,true,true)
 </script>
-<!-- Add this for Cloudflare Pages deploy -->
 <div id="app-root">
   <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
     <h1 style="font-size: 2rem; margin-bottom: 1rem;">GCSE AI Marker</h1>
