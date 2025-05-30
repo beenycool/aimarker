@@ -7,11 +7,8 @@ const dotenv = require('dotenv');
 // Load environment variables
 dotenv.config();
 
-// Define the ports we want to use
+// Define the port we want to use
 const MAIN_PORT = process.env.PORT || 3000;
-// On Render, we MUST use the assigned PORT for everything
-// Don't try to use a separate chess port on Render
-const CHESS_PORT = process.env.RENDER ? process.env.PORT : (process.env.CHESS_PORT || 10000);
 
 // Try to load port manager, but provide fallbacks if it fails
 let freePort, findAvailablePort;
@@ -111,10 +108,6 @@ async function startServers() {
   try {
     // Skip port freeing on Render as it's not needed
     if (!process.env.RENDER) {
-      // Try to free the chess port if it's in use
-      console.log(`Attempting to free chess port ${CHESS_PORT}...`);
-      await freePort(CHESS_PORT);
-      
       // Try to free the main port if it's in use
       console.log(`Attempting to free main port ${MAIN_PORT}...`);
       await freePort(MAIN_PORT);
@@ -132,8 +125,6 @@ async function startServers() {
         ...process.env,
         // If we're on Render, make sure we use their assigned PORT
         PORT: process.env.PORT || MAIN_PORT,
-        // On Render, use the same port for both services
-        CHESS_PORT: process.env.PORT || CHESS_PORT,
         // Set a flag to indicate we're on Render
         RENDER: process.env.RENDER || '',
         // Disable separate chess server on Render
@@ -168,4 +159,4 @@ async function startServers() {
 startServers().catch(err => {
   console.error('Unhandled error during startup:', err);
   process.exit(1);
-}); 
+});

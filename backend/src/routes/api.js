@@ -33,7 +33,6 @@ router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
 router.post('/auth/logout', authenticateToken, authController.logout);
 router.get('/auth/user', authenticateToken, authController.getCurrentUser);
-router.post('/auth/events', authController.recordUserEvent);
 
 // Guild routes - Commented out as Guild model and controller are removed/being removed
 // router.post('/guilds', authenticateToken, guildController.createGuild);
@@ -58,11 +57,6 @@ router.post('/auth/events', authController.recordUserEvent);
 // router.post('/admin/guilds', authenticateToken, isAdmin, adminController.adminCreateGuild);
 // router.put('/admin/guilds/:id', authenticateToken, isAdmin, adminController.adminUpdateGuild);
 // router.delete('/admin/guilds/:id', authenticateToken, isAdmin, adminController.adminDeleteGuild);
-
-// // Note: Original specific leaderboard routes can be kept for other purposes or removed if no longer needed - Commented out
-// router.get('/admin/leaderboard/chess', authenticateToken, isAdmin, adminController.getChessLeaderboard);
-// router.get('/admin/leaderboard/guilds', authenticateToken, isAdmin, adminController.getGuildLeaderboard);
-
 
 // GitHub model API routes
 router.post('/github/completions', globalRateLimiter, async (req, res) => {
@@ -176,7 +170,7 @@ router.post('/chat/completions', globalRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Invalid request: model and messages are required.' });
     }
 
-    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Content-Type', 'text-event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();

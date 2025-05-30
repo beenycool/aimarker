@@ -37,7 +37,6 @@ dotenv.config();
 // Import routes and middleware
 const apiRoutes = require('./routes/api');
 const { attachRequestMetrics } = require('./middleware/auth');
-// const chessServer = require('./chess-server');
 
 // Initialize Express app
 const app = express();
@@ -45,13 +44,6 @@ const server = http.createServer(app);
 
 // Trust proxy for Render deployment (important for rate limiting)
 app.set('trust proxy', 1);
-
-// Setup event handling for chess server failures if using child process
-// process.on('message', (message) => {
-//   if (message.type === 'chess-server-failed') {
-//     console.warn('Chess server failed to start. Chess functionality may be limited.');
-//   }
-// });
 
 // PostHog Integration
 let posthog;
@@ -192,19 +184,6 @@ if (process.env.RENDER) {
 // Serve static files
 app.use(express.static(publicDir));
 
-// Initialize chess server which sets up Socket.io
-// const io = socketIo(server, {
-//   cors: {
-//     origin: '*', // Allow all origins, modify for production
-//     methods: ['GET', 'POST']
-//   }
-// });
-
-// Pass io instance to chess-server
-// if (typeof chessServer.setup === 'function') {
-//   chessServer.setup(io);
-// }
-
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -305,4 +284,4 @@ process.on('SIGTERM', () => {
   });
 });
 
-module.exports = server; 
+module.exports = server;
