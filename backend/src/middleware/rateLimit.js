@@ -1,5 +1,14 @@
 const rateLimit = require('express-rate-limit');
-const { LRUCache } = require('lru-cache');
+// Handle different versions of lru-cache
+let LRUCache;
+try {
+  // Try newer syntax (v7+)
+  const lruCache = require('lru-cache');
+  LRUCache = lruCache.LRUCache || lruCache;
+} catch (error) {
+  // Fallback to older syntax
+  LRUCache = require('lru-cache');
+}
 
 // Configure LRU cache for storing request counts
 const options = {
