@@ -19,7 +19,7 @@
     "express-useragent": "^1.0.15",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "lru-cache": "^11.1.0",
+    "lru-cache": "^7.18.3",
     "morgan": "^1.10.0",
     "node-fetch": "^2.7.0",
     "openai": "^4.26.0",
