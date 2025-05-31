@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# For Cloudflare Pages - built assets are generated during deployment
+# No need to commit built files
+
 # production
 /build
 

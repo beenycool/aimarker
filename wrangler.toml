@@ -1,0 +1,14 @@
+name = "gcse-ai-marker"
+compatibility_date = "2024-12-01"
+
+[build]
+command = "npm run build"
+destination = "out"
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+[env.production]
+route = "aimarker.tech/*"
