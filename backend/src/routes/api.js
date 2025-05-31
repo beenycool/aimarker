@@ -181,7 +181,7 @@ router.post('/chat/completions', globalRateLimiter, async (req, res) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         // OpenRouter might infer HTTP-Referer from the request for identification
-        'HTTP-Referer': req.headers.origin || 'https://aimarker.tech',
+        'HTTP-Referer': req.headers.origin || 'https://api.aimarker.tech',
         'X-Title': 'GCSE AI Marker' // Optional: For OpenRouter to identify your app
       },
       body: JSON.stringify({ model, messages, stream: stream !== undefined ? stream : true })
