@@ -235,7 +235,7 @@ const BackendStatusChecker = ({ onStatusChange }) => {
   const [wakeupProgress, setWakeupProgress] = useState(0);
   const [wakeupAttempts, setWakeupAttempts] = useState(0);
   const wakeupTimerRef = useRef(null);
-  const { checkBackendStatus } = useBackendStatus(API_BASE_URL);
+  const { checkBackendStatus } = useBackendStatus(getAPI_BASE_URL());
   
   const checkStatus = useCallback(async () => {
     try {
@@ -1273,7 +1273,7 @@ const AIMarker = () => {
   // console.log('AIMarker component is rendering', { window: typeof window !== 'undefined' ? window.location.hostname : 'SSR' });
   
   useEffect(() => {
-    console.log(`Using API URL: ${API_BASE_URL}`);
+    console.log(`Using API URL: ${getAPI_BASE_URL()}`);
     if (typeof window !== 'undefined' && !window.BACKEND_STATUS) {
       window.BACKEND_STATUS = { status: 'checking', lastChecked: null };
     }
@@ -1312,7 +1312,7 @@ const AIMarker = () => {
   const [showSubjectGuidanceDialog, setShowSubjectGuidanceDialog] = useState(false);
   const [currentSubjectGuidance, setCurrentSubjectGuidance] = useState("");
 
-  const { checkBackendStatus: refreshBackendStatusHook } = useBackendStatus(API_BASE_URL); // Alias for clarity
+  const { checkBackendStatus: refreshBackendStatusHook } = useBackendStatus(getAPI_BASE_URL()); // Alias for clarity
 
   // ADDED: State for Bulk Assessment
   const [bulkFile, setBulkFile] = useState(null);
@@ -3206,7 +3206,7 @@ Please respond to their question clearly and constructively. Keep your answer co
     }
   };
 
-      // Add a function to create a middleware API endpoint in Next.js    const createMiddlewareApiEndpoint = async () => {        try {            // Check if we're running in a browser environment            if (typeof window === 'undefined') return false;                        // Check if we're in static export mode            const isStaticExport = process.env.IS_STATIC_EXPORT === 'true';                        if (isStaticExport) {                console.log('Running in static export mode - API calls redirected to backend');        console.log(`Using API base URL: ${API_BASE_URL}`);        return true;            }                        try {        // Only try to use local API in development mode        const response = await fetch('/api/create-middleware', {                  method: 'POST',                  headers: {                      'Content-Type': 'application/json',                  },                  body: JSON.stringify({                      type: 'api_middleware',                      endpoints: ['auth/events', 'github/completions', 'chat/completions']                  }),                  cache: 'no-store'              });                            if (response.ok) {                  console.log('Successfully created middleware API endpoints');                  return true;              }      } catch (localApiError) {        console.warn('Local API middleware creation failed, falling back to remote API:', localApiError.message);                // If local API fails, try to check if the remote API is available        try {          const healthCheckUrl = constructApiUrl('health');          const healthCheck = await fetch(healthCheckUrl, {             method: 'GET',            headers: { 'Content-Type': 'application/json' },            cache: 'no-store'          });                    if (healthCheck.ok) {            console.log('Remote API is available, will use it instead of local API');            return true;          }        } catch (remoteApiError) {          console.error('Remote API health check failed:', remoteApiError.message);        }      }            return false;        } catch (error) {            console.error('Failed to create middleware API endpoint:', error);            // In static export, we want to gracefully handle this error            if (process.env.IS_STATIC_EXPORT === 'true') {                console.log('Running in static export mode - ignoring API middleware creation failure');                return true;            }            return false;        }    };
+      // Add a function to create a middleware API endpoint in Next.js    const createMiddlewareApiEndpoint = async () => {        try {            // Check if we're running in a browser environment            if (typeof window === 'undefined') return false;                        // Check if we're in static export mode            const isStaticExport = process.env.IS_STATIC_EXPORT === 'true';                        if (isStaticExport) {                console.log('Running in static export mode - API calls redirected to backend');        console.log(`Using API base URL: ${getAPI_BASE_URL()}`);        return true;            }                        try {        // Only try to use local API in development mode        const response = await fetch('/api/create-middleware', {                  method: 'POST',                  headers: {                      'Content-Type': 'application/json',                  },                  body: JSON.stringify({                      type: 'api_middleware',                      endpoints: ['auth/events', 'github/completions', 'chat/completions']                  }),                  cache: 'no-store'              });                            if (response.ok) {                  console.log('Successfully created middleware API endpoints');                  return true;              }      } catch (localApiError) {        console.warn('Local API middleware creation failed, falling back to remote API:', localApiError.message);                // If local API fails, try to check if the remote API is available        try {          const healthCheckUrl = constructApiUrl('health');          const healthCheck = await fetch(healthCheckUrl, {             method: 'GET',            headers: { 'Content-Type': 'application/json' },            cache: 'no-store'          });                    if (healthCheck.ok) {            console.log('Remote API is available, will use it instead of local API');            return true;          }        } catch (remoteApiError) {          console.error('Remote API health check failed:', remoteApiError.message);        }      }            return false;        } catch (error) {            console.error('Failed to create middleware API endpoint:', error);            // In static export, we want to gracefully handle this error            if (process.env.IS_STATIC_EXPORT === 'true') {                console.log('Running in static export mode - ignoring API middleware creation failure');                return true;            }            return false;        }    };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -4365,3 +4365,4 @@ Please respond to their question clearly and constructively. Keep your answer co
 }
 
 export default AIMarker;
+
