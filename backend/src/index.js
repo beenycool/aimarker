@@ -22,52 +22,6 @@ const server = http.createServer(app);
 // Trust proxy for Render deployment (important for rate limiting)
 app.set('trust proxy', 1);
 
-// PostHog Integration
-let posthog;
-if (process.env.POSTHOG_API_KEY) {
-  try {
-    const { PostHog } = require('posthog-node');
-    posthog = new PostHog(
-      process.env.POSTHOG_API_KEY,
-      { host: process.env.POSTHOG_HOST || 'https://app.posthog.com' }
-    );
-    console.log('PostHog analytics initialized successfully');
-    
-    // Add PostHog middleware
-    app.use((req, res, next) => {
-      // Skip tracking for static assets
-      if (!req.path.startsWith('/api') && 
-          (req.path.includes('.') || req.path.includes('_next'))) {
-        return next();
-      }
-      
-      const distinctId = req.headers['x-forwarded-for'] || 
-                         req.connection.remoteAddress || 
-                         'anonymous';
-      
-      posthog.capture({
-        distinctId,
-        event: 'page_view',
-        properties: {
-          path: req.path,
-          referrer: req.headers.referer || '',
-          userAgent: req.headers['user-agent'] || '',
-          ip: req.ip
-        }
-      });
-      
-      // Attach posthog to req for use in routes
-      req.posthog = posthog;
-      next();
-    });
-  } catch (error) {
-    console.error('Failed to initialize PostHog:', error);
-    console.warn('Analytics will be disabled');
-  }
-} else {
-  console.warn('POSTHOG_API_KEY not set. Analytics will be disabled.');
-}
-
 // Apply middleware
 app.use(cors());
 app.use(express.json({ limit: '5mb' })); // Increased limit for screen captures
@@ -77,8 +31,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://app.posthog.com"],
-      connectSrc: ["'self'", "https://app.posthog.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      connectSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       fontSrc: ["'self'", "data:"],

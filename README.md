@@ -1,12 +1,11 @@
 # Beenycool AI GCSE Marker
 
-A unified web application for GCSE exam grading and feedback using AI, with integrated analytics.
+A unified web application for GCSE exam grading and feedback using AI.
 
 ## Features
 
 - AI-powered exam grading and feedback
 - Todo list management
-- PostHog analytics integration for tracking user behavior
 
 ## Architecture
 
@@ -14,7 +13,6 @@ This application uses a unified server architecture:
 
 - **Frontend**: Next.js React application
 - **Backend**: Express.js server
-- **Analytics**: PostHog
 - **Authentication**: JWT-based auth system
 
 Both frontend and backend run on the same server, simplifying deployment and management.
@@ -24,7 +22,6 @@ Both frontend and backend run on the same server, simplifying deployment and man
 ### Prerequisites
 
 - Node.js 18+ and npm
-- PostHog account (for analytics)
 
 ### Environment Variables
 
@@ -38,12 +35,6 @@ JWT_EXPIRES_IN=7d
 # API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:3000/api
 PORT=3000
-
-# PostHog Analytics
-POSTHOG_API_KEY=your_posthog_api_key
-POSTHOG_HOST=https://app.posthog.com
-NEXT_PUBLIC_POSTHOG_KEY=your_posthog_public_key
-NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
 
 # Node Environment
 NODE_ENV=development
@@ -85,14 +76,6 @@ This application is designed to be deployed on Render. Use the following setting
 
 Set all the required environment variables in the Render dashboard.
 
-## Analytics
-
-This application uses PostHog for analytics. Key events tracked include:
-
-- Page views
-- User logins/registrations
-- Feature usage
-
 ## License
 
-This project is proprietary and confidential. 
+This project is proprietary and confidential.
