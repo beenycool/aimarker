@@ -50,11 +50,8 @@ import Papa from 'papaparse'; // Import PapaParse
 // Import API helper functions from separate file
 import { getApiBaseUrl, constructApiUrl } from '@/lib/api-helpers';
 
-// API URL for our backend
-// NEXT_PUBLIC_API_BASE_URL should be set in your environment variables.
-// For production, it should point to your DigitalOcean backend.
-// For local development, it can point to your local backend.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3003'; // Fallback for local if not set
+// Get the dynamic API URL for our backend - using function to ensure it's evaluated at runtime
+const getAPI_BASE_URL = () => getApiBaseUrl();
 
 // Constants moved to a separate section for easier management
 const HISTORY_LIMIT = 10; // Define the maximum number of history items to keep
@@ -1659,7 +1656,7 @@ const AIMarker = () => {
 
   // Fix: Using custom hooks for subject classification and backend status
   const { classifySubjectAI, debouncedClassifySubject } = useSubjectDetection(subjectKeywords, loading);
-  const { checkBackendStatus } = useBackendStatus(API_BASE_URL);
+  const { checkBackendStatus } = useBackendStatus(getAPI_BASE_URL());
 
 
   // Effect for automatic subject detection based on question and answer
@@ -2626,7 +2623,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
       
       if (currentModelForItem.startsWith("openai/") || currentModelForItem.startsWith("xai/")) {
         // GitHub models API for GitHub and Grok models
-        response = await fetch(`${API_BASE_URL}/api/github/completions`, {
+        response = await fetch(constructApiUrl('github/completions'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2642,7 +2639,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
         });
       } else {
         // Standard API for other models
-        response = await fetch(`${API_BASE_URL}/api/chat/completions`, {
+        response = await fetch(constructApiUrl('chat/completions'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -3065,7 +3062,7 @@ Please respond to their question clearly and constructively. Keep your answer co
         
         while (retryCountFollowUp < maxRetriesFollowUp && !successFollowUp) {
           try {
-            response = await fetch(`${API_BASE_URL}/api/gemini/generate`, {
+            response = await fetch(constructApiUrl('gemini/generate'), {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -3092,7 +3089,7 @@ Please respond to their question clearly and constructively. Keep your answer co
         }
       } else if (selectedModel.startsWith("openai/") || selectedModel.startsWith("xai/")) {
         // GitHub models API for GitHub and Grok models
-        response = await fetch(`${API_BASE_URL}/api/github/completions`, {
+        response = await fetch(constructApiUrl('github/completions'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3121,7 +3118,7 @@ Please respond to their question clearly and constructively. Keep your answer co
         });
       } else {
         // Standard API request for other models
-        response = await fetch(`${API_BASE_URL}/api/chat/completions`, {
+        response = await fetch(constructApiUrl('chat/completions'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
