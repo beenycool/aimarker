@@ -29,7 +29,7 @@ export function middleware(request) {
   // For static export, we need to handle API routes specially
   if (process.env.STATIC_EXPORT === 'true' && pathname.startsWith('/api/')) {
     // Redirect API routes to the backend
-    const backendUrl = 'http://165.232.94.215:3000';
+    const backendUrl = 'https://api.aimarker.tech';
     const apiUrl = new URL(pathname, backendUrl);
     
     // Copy all search parameters

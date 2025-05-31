@@ -18,7 +18,7 @@ const nextConfig = {
   },
   distDir: '.next',
   env: {
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://165.232.94.215:3000',
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.aimarker.tech',
   },
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
