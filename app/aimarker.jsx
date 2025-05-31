@@ -48,16 +48,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import Papa from 'papaparse'; // Import PapaParse
 
 // Import API helper functions from separate file
-import { getApiBaseUrl, constructApiUrl, isGitHubPages as isGHPagesHelper } from '@/lib/api-helpers'; // Renamed import
+import { getApiBaseUrl, constructApiUrl } from '@/lib/api-helpers';
 
 // API URL for our backend
 // NEXT_PUBLIC_API_BASE_URL should be set in your environment variables.
-// For GitHub Pages, it should point to your Render backend.
+// For production, it should point to your DigitalOcean backend.
 // For local development, it can point to your local backend.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3003'; // Fallback for local if not set
-
-// Determine if running on GitHub Pages using the helper
-const isGHPages = isGHPagesHelper();
 
 // Constants moved to a separate section for easier management
 const HISTORY_LIMIT = 10; // Define the maximum number of history items to keep
@@ -1279,7 +1276,7 @@ const AIMarker = () => {
   // console.log('AIMarker component is rendering', { window: typeof window !== 'undefined' ? window.location.hostname : 'SSR' });
   
   useEffect(() => {
-    console.log(`Using API URL: ${API_BASE_URL}`, `GitHub Pages: ${isGHPages}`);
+    console.log(`Using API URL: ${API_BASE_URL}`);
     if (typeof window !== 'undefined' && !window.BACKEND_STATUS) {
       window.BACKEND_STATUS = { status: 'checking', lastChecked: null };
     }
@@ -1308,7 +1305,6 @@ const AIMarker = () => {
   const [relevantMaterialImageLoading, setRelevantMaterialImageLoading] = useState(false);
   const [modelThinking, setModelThinking] = useState("");
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
-  const [isGitHubPages, setIsGitHubPages] = useState(false);
   const [tier, setTier] = useState("higher"); 
   const [achievedMarks, setAchievedMarks] = useState(null); 
   const [ocrTextPreview, setOcrTextPreview] = useState("");
@@ -1410,15 +1406,8 @@ const AIMarker = () => {
       // Add the selected model to the form data
       formData.append('model', ocrModel);
       
-      // Use the CORRECT backend URL when on GitHub Pages
-      const isGitHubPagesEnv = typeof window !== 'undefined' && 
-        (window.location.hostname.includes('github.io') || window.location.hostname === 'beenycool.github.io');
-        
-      // Always use the remote server for GitHub Pages since GitHub Pages can't handle file uploads
-      // The backend server REQUIRES the /api prefix in the URL
-      const apiUrl = isGitHubPagesEnv 
-        ? 'http://165.232.94.215:3000/api/github/completions'
-        : constructApiUrl('github/completions');
+      // Use the DigitalOcean backend URL
+      const apiUrl = constructApiUrl('github/completions');
       
       setProcessingStep("analyzing_content");
       setProcessingProgress(30);
@@ -1672,20 +1661,6 @@ const AIMarker = () => {
   const { classifySubjectAI, debouncedClassifySubject } = useSubjectDetection(subjectKeywords, loading);
   const { checkBackendStatus } = useBackendStatus(API_BASE_URL);
 
-  // Special handling for GitHub Pages environment
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isGitHubPagesHost = window.location.hostname.includes('github.io') || 
-                               window.location.hostname === 'beenycool.github.io';
-      setIsGitHubPages(isGitHubPagesHost);
-      
-      if (isGitHubPagesHost) {
-        console.log('Running on GitHub Pages - simulating online status for UI rendering (mount effect)');
-        backendStatusRef.current = 'online';
-        // REMOVED: setBackendUpdated(prev => !prev); // This was likely causing the loop
-      }
-    }
-  }, []); // Empty dependency array to run only on mount
 
   // Effect for automatic subject detection based on question and answer
   useEffect(() => {
@@ -1902,15 +1877,8 @@ const AIMarker = () => {
       }
 
 
-             // Use the CORRECT backend URL when on GitHub Pages
-      const isGitHubPagesEnv = typeof window !== 'undefined' && 
-        (window.location.hostname.includes('github.io') || window.location.hostname === 'beenycool.github.io');
-        
-      // Always use the remote server for GitHub Pages
-      // The backend server REQUIRES the /api prefix in the URL
-      const completionsApiUrl = isGitHubPagesEnv 
-        ? 'http://165.232.94.215:3000/api/github/completions'
-        : constructApiUrl('github/completions');
+      // Use the DigitalOcean backend URL
+      const completionsApiUrl = constructApiUrl('github/completions');
       
       console.log('Sending completions request to:', completionsApiUrl);
       
@@ -2232,15 +2200,8 @@ TOTAL MARKS: ${marksToUse}` : ''}
         }
         
         try {
-          // Use the CORRECT backend URL when on GitHub Pages
-          const isGitHubPagesEnv = typeof window !== 'undefined' && 
-            (window.location.hostname.includes('github.io') || window.location.hostname === 'beenycool.github.io');
-            
-                     // Always use the remote server for GitHub Pages
-           // The backend server REQUIRES the /api prefix in the URL
-           const geminiApiUrl = isGitHubPagesEnv 
-             ? 'http://165.232.94.215:3000/api/gemini/generate'
-             : constructApiUrl('gemini/generate');
+          // Use the DigitalOcean backend URL
+          const geminiApiUrl = constructApiUrl('gemini/generate');
           
           console.log('Sending Gemini generate request to:', geminiApiUrl);
           
@@ -2259,15 +2220,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
               console.warn(`Model ${currentModel} not supported by direct Gemini API, falling back to standard chat API`);
               
               // Fallback to using the standard chat API endpoint
-              // Use the CORRECT backend URL when on GitHub Pages
-              const isGitHubPagesEnv = typeof window !== 'undefined' && 
-                (window.location.hostname.includes('github.io') || window.location.hostname === 'beenycool.github.io');
-                
-                             // Always use the remote server for GitHub Pages
-               // The backend server REQUIRES the /api prefix in the URL
-              const chatApiUrl = isGitHubPagesEnv 
-                ? 'https://beenycool-github-io.onrender.com/api/chat/completions'
-                : constructApiUrl('chat/completions');
+              const chatApiUrl = constructApiUrl('chat/completions');
               
               console.log('Falling back to chat completions API:', chatApiUrl);
               
@@ -2294,15 +2247,7 @@ TOTAL MARKS: ${marksToUse}` : ''}
         }
       } else if (currentModel.startsWith("openai/") || currentModel.startsWith("xai/")) {
         // GitHub models API for GitHub and Grok models
-        // Use the CORRECT backend URL when on GitHub Pages
-        const isGitHubPagesEnv = typeof window !== 'undefined' && 
-          (window.location.hostname.includes('github.io') || window.location.hostname === 'beenycool.github.io');
-          
-                 // Always use the remote server for GitHub Pages
-         // The backend server REQUIRES the /api prefix in the URL
-        const githubApiUrl = isGitHubPagesEnv 
-          ? 'http://165.232.94.215:3000/api/github/completions'
-          : constructApiUrl('github/completions');
+        const githubApiUrl = constructApiUrl('github/completions');
         
         console.log('Sending GitHub completions request to:', githubApiUrl);
         

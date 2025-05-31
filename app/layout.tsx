@@ -21,11 +21,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "GCSE AI Marker | Intelligent Exam Grading",
     description: "Improve your GCSE exam preparation with AI-powered grading and feedback",
-    url: "https://beenycool.github.io",
+    url: "https://aimarker.tech",
     siteName: "GCSE AI Marker",
     images: [
       {
-        url: "https://beenycool.github.io/og-image.png",
+        url: "https://aimarker.tech/og-image.png",
         width: 1200,
         height: 630,
         alt: "GCSE AI Marker Preview",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GCSE AI Marker | Intelligent Exam Grading",
     description: "AI-powered GCSE exam preparation tool with instant feedback",
-    images: ["https://beenycool.github.io/og-image.png"],
+    images: ["https://aimarker.tech/og-image.png"],
   },
   appleWebApp: {
     capable: true,

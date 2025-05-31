@@ -77,44 +77,7 @@ export const useSubjectDetection = (subjectKeywords, loading) => {
 export const useBackendStatus = (API_BASE_URL) => {
   const checkBackendStatus = useCallback(async (model) => {
     try {
-      // Special case for GitHub Pages to always show the UI
-      if (typeof window !== 'undefined' && 
-          (window.location.hostname.includes('github.io') || 
-           window.location.hostname === 'beenycool.github.io')) {
-        console.log('Running on GitHub Pages - simulating online status for UI rendering');
-        
-        // Enable local API fallbacks when on GitHub Pages
-        if (typeof window !== 'undefined') {
-          try {
-            // Set environment variable to use local API handlers
-            window.localStorage.setItem('USE_LOCAL_API', 'true');
-            
-            // Don't try to create middleware endpoints on GitHub Pages
-            // GitHub Pages can't handle POST requests (static hosting only)
-          } catch (e) {
-            console.warn('Failed to set up local API fallbacks:', e);
-          }
-          
-          window.BACKEND_STATUS = { 
-            status: 'online', 
-            lastChecked: new Date().toLocaleTimeString(),
-            isGitHubPages: true,
-            usingLocalFallbacks: true
-          };
-        }
-        
-        return { 
-          ok: true, 
-          data: { 
-            status: 'ok', 
-            openaiClient: true, 
-            apiKeyConfigured: true,
-            isGitHubPages: true,
-            usingLocalFallbacks: true
-          },
-          status: 'online'
-        };
-      }
+      // Using DigitalOcean backend - no special handling needed
 
       let retryCount = 0;
       const maxRetries = 3; // Try up to 4 times total (initial + 3 retries)
@@ -124,16 +87,23 @@ export const useBackendStatus = (API_BASE_URL) => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 12000); // Increased timeout to 12 seconds
           
-                    // Use the constructApiUrl function if available
-          const isGitHubPagesEnv = typeof window !== 'undefined' && 
-            (window.location.hostname.includes('github.io') || window.location.hostname === 'beenycool.github.io');
-          
-          // Direct URL for GitHub Pages, otherwise use constructApiUrl
-          const healthEndpoint = isGitHubPagesEnv
-            ? `${API_BASE_URL}/health`
-            : (typeof window !== 'undefined' && window.constructApiUrl 
+          // Use the constructApiUrl function
+          const healthEndpoint = typeof window !== 'undefined' && window.constructApiUrl
                 ? window.constructApiUrl('health')
-                : `${API_BASE_URL}/api/health`);                    console.log(`Checking backend health at ${healthEndpoint}`);                    const response = await fetch(`${healthEndpoint}?timestamp=${Date.now()}`, {            method: 'GET',            signal: controller.signal,            mode: 'cors',            headers: {              'Cache-Control': 'no-cache, no-store, must-revalidate',              'Pragma': 'no-cache',              'Expires': '0'            }          });
+                : `${API_BASE_URL}/api/health`;
+          
+          console.log(`Checking backend health at ${healthEndpoint}`);
+          
+          const response = await fetch(`${healthEndpoint}?timestamp=${Date.now()}`, {
+            method: 'GET',
+            signal: controller.signal,
+            mode: 'cors',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
           
           clearTimeout(timeoutId);
           

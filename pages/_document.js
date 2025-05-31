@@ -29,9 +29,7 @@ export default function Document() {
                     : DEFAULT_BACKEND_URL;
                 };
                 
-                window.API_HELPERS.isGitHubPages = window.isGitHubPages = function() {
-                  return window.location.hostname.includes('github.io');
-                };
+                // Removed GitHub Pages detection - now using DigitalOcean
                 
                 window.API_HELPERS.constructApiUrl = window.constructApiUrl = function(endpoint) {
                   const apiBaseUrl = window.getApiBaseUrl();
