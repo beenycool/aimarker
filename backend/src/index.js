@@ -22,8 +22,17 @@ const server = http.createServer(app);
 // Trust proxy for Render deployment (important for rate limiting)
 app.set('trust proxy', 1);
 
-// Apply middleware
-app.use(cors());
+// Apply middleware - Secure CORS to only allow frontend domain
+app.use(cors({
+  origin: [
+    'https://aimarker.tech',
+    'https://www.aimarker.tech',
+    'http://localhost:3001', // for development
+    'http://localhost:3000'  // for development
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
 app.use(express.json({ limit: '5mb' })); // Increased limit for screen captures
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev')); // Log HTTP requests
@@ -40,14 +49,16 @@ app.use(helmet({
   },
 }));
 
-// Rate limiting
+// Rate limiting - More restrictive limits
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 50, // Limit each IP to 50 requests per 15 minutes (more restrictive)
   message: {
     success: false,
     message: 'Too many requests, please try again later.'
-  }
+  },
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 // Apply rate limiter to all API routes
