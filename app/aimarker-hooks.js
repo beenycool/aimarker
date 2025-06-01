@@ -87,12 +87,11 @@ export const useBackendStatus = (API_BASE_URL) => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 12000); // Increased timeout to 12 seconds
           
-          // Use the constructApiUrl function
-          const healthEndpoint = typeof window !== 'undefined' && window.constructApiUrl
-                ? window.constructApiUrl('health')
-                : `${API_BASE_URL}/api/health`;
+          // Construct the health endpoint URL directly
+          const healthEndpoint = `${API_BASE_URL}/api/health`;
           
-          console.log(`Checking backend health at ${healthEndpoint}`);
+          console.log(`[HEALTH-CHECK] Checking backend health at ${healthEndpoint}`);
+          console.log(`[HEALTH-CHECK] API_BASE_URL parameter: ${API_BASE_URL}`);
           
           const response = await fetch(`${healthEndpoint}?timestamp=${Date.now()}`, {
             method: 'GET',
