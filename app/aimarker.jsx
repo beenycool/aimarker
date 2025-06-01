@@ -1505,6 +1505,7 @@ const AIMarker = () => {
   const submitButtonRef = useRef(null);
   const hasManuallySetSubject = useRef(false);
   const backendStatusRef = useRef('checking');
+  const [backendStatus, setBackendStatus] = useState('checking'); // Add reactive state for UI
   const currentModelForRequestRef = useRef(null);
   const [backendUpdated, setBackendUpdated] = useState(false);
   const [autoMaxTokens, setAutoMaxTokens] = useState(true);
@@ -1647,7 +1648,7 @@ const AIMarker = () => {
   const handleBackendStatusChange = useCallback((status, data) => {
     console.log('Backend status changed:', status, data);
     backendStatusRef.current = status;
-    // setBackendUpdated(prev => !prev); // REMOVE THIS LINE to prevent potential loop
+    setBackendStatus(status); // Update reactive state for UI
     
     // If backend is offline, show appropriate error
     if (status === 'offline' || status === 'error') {
@@ -3213,7 +3214,7 @@ Please respond to their question clearly and constructively. Keep your answer co
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <TopBar version="2.1.3" backendStatus={backendStatusRef.current} remainingTokens={remainingRequestTokens} />
+      <TopBar version="2.1.3" backendStatus={backendStatus} remainingTokens={remainingRequestTokens} />
       
       {/* ADDED: OCR Preview Dialog (Sheet was mentioned, but Dialog is simpler here) */}
       <Dialog open={showOcrPreviewDialog} onOpenChange={(open) => {
