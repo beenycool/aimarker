@@ -92,6 +92,7 @@ export const useBackendStatus = (API_BASE_URL) => {
           
           console.log(`[HEALTH-CHECK] Checking backend health at ${healthEndpoint}`);
           console.log(`[HEALTH-CHECK] API_BASE_URL parameter: ${API_BASE_URL}`);
+          console.log(`[HEALTH-CHECK] Starting fetch request...`);
           
           const response = await fetch(`${healthEndpoint}?timestamp=${Date.now()}`, {
             method: 'GET',
@@ -105,6 +106,8 @@ export const useBackendStatus = (API_BASE_URL) => {
           });
           
           clearTimeout(timeoutId);
+          
+          console.log(`[HEALTH-CHECK] Fetch completed. Status: ${response.status}, OK: ${response.ok}`);
           
           if (!response.ok) {
             // WORKAROUND: If health check returns 404, simulate success to allow UI to render
@@ -166,7 +169,12 @@ export const useBackendStatus = (API_BASE_URL) => {
         }
       }
     } catch (error) {
-      console.error("Backend health check failed:", error);
+      console.error("[HEALTH-CHECK] Backend health check failed:", error);
+      console.error("[HEALTH-CHECK] Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.substring(0, 200)
+      });
       
       let errorMessage = error.message;
       let status = 'error';
