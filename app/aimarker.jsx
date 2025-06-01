@@ -78,8 +78,8 @@ const USER_TYPES = [
 ];
 
 const AI_MODELS = [
-  { value: "o3", label: "O3", description: "Most powerful model, but heavily rate limited." },
-  { value: "o4-mini", label: "O4 Mini", description: "Delivers compareable performance to o3, but much faster" },
+  { value: "o3", label: "O3", description: "Most powerful model, limited to 1 use per day." },
+  { value: "o4-mini", label: "O4 Mini", description: "Delivers comparable performance to o3, but much faster" },
   { value: "xai/grok-3", label: "Grok-3", description: "X AI Model (Grok)" },
   { value: "xai/grok-3-mini", label: "Grok-3 Mini", description: "Smaller, faster X AI Model" },
   { value: "gemini-2.5-flash-preview-05-20", label: "Gemini 2.5 Flash Preview", description: "Best quality with faster response times" },
@@ -217,6 +217,29 @@ const detectTotalMarksFromQuestion = (questionText) => {
   
   return null;
 };
+
+// Helper function to calculate grade based on boundaries
+const calculateGradeFromBoundaries = (achievedMarks, totalMarks, boundaries) => {
+  if (!achievedMarks || !totalMarks || totalMarks <= 0) {
+    return null;
+  }
+  
+  const percentage = (parseFloat(achievedMarks) / parseFloat(totalMarks)) * 100;
+  
+  // Sort grades in descending order to find the highest grade the student achieved
+  const sortedGrades = Object.entries(boundaries)
+    .sort(([a], [b]) => parseInt(b) - parseInt(a)); // Sort by grade number descending
+  
+  for (const [grade, threshold] of sortedGrades) {
+    if (percentage >= threshold) {
+      return grade;
+    }
+  }
+  
+  // If below all thresholds, assign Grade 1
+  return '1';
+};
+
 
 // Helper function to copy feedback to clipboard
 const copyFeedbackToClipboard = (feedback) => {
@@ -1127,6 +1150,9 @@ const LOCALSTORAGE_KEYS = {
   EXAM_BOARD: 'aimarker_examBoard',
   MODEL: 'aimarker_model',
   TIER: 'aimarker_tier',
+  ENABLE_GRADE_BOUNDARIES: 'aimarker_enableGradeBoundaries',
+  GRADE_BOUNDARIES: 'aimarker_gradeBoundaries',
+  BOUNDARIES_SOURCE: 'aimarker_boundariesSource',
 };
 
 // ADDED: Enhanced Bulk Item Preview Dialog component
@@ -1354,6 +1380,8 @@ const AIMarker = () => {
     }
   };
   
+  // Handle fetching official grade boundaries
+
   // Handle relevant material image upload
   const handleRelevantMaterialImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -1513,6 +1541,18 @@ const AIMarker = () => {
   const [remainingRequestTokens, setRemainingRequestTokens] = useState(0);
   const [thinkingBudget, setThinkingBudget] = useState(DEFAULT_THINKING_BUDGETS["deepseek/deepseek-chat-v3-0324:free"] || 1024);
   const [enableThinkingBudget, setEnableThinkingBudget] = useState(true);
+  const [enableGradeBoundaries, setEnableGradeBoundaries] = useState(false);
+  const [gradeBoundaries, setGradeBoundaries] = useState({
+    '9': 85,  // Grade 9 (A**)
+    '8': 75,  // Grade 8 (A*)
+    '7': 65,  // Grade 7 (A)
+    '6': 55,  // Grade 6 (B)
+    '5': 45,  // Grade 5 (C)
+    '4': 35,  // Grade 4 (C-)
+    '3': 25,  // Grade 3 (D)
+    '2': 15   // Grade 2 (E)
+  });
+  const [boundariesSource, setBoundariesSource] = useState(null);
 
   // Define the missing setCurrentModelForRequest function
   const setCurrentModelForRequest = (model) => {
@@ -1597,6 +1637,27 @@ const AIMarker = () => {
       setTier(savedTier);
     }
 
+    // Load grade boundaries settings
+    const savedEnableGradeBoundaries = localStorage.getItem(LOCALSTORAGE_KEYS.ENABLE_GRADE_BOUNDARIES);
+    if (savedEnableGradeBoundaries !== null) {
+      setEnableGradeBoundaries(savedEnableGradeBoundaries === 'true');
+    }
+    
+    const savedGradeBoundaries = localStorage.getItem(LOCALSTORAGE_KEYS.GRADE_BOUNDARIES);
+    if (savedGradeBoundaries) {
+      try {
+        const parsedBoundaries = JSON.parse(savedGradeBoundaries);
+        setGradeBoundaries(parsedBoundaries);
+      } catch (error) {
+        console.warn('Failed to parse saved grade boundaries:', error);
+      }
+    }
+    
+    const savedBoundariesSource = localStorage.getItem(LOCALSTORAGE_KEYS.BOUNDARIES_SOURCE);
+    if (savedBoundariesSource) {
+      setBoundariesSource(savedBoundariesSource);
+    }
+
     // Initialize remaining tokens display
     const tokens = getRequestTokens();
     setRemainingRequestTokens(tokens.count);
@@ -1628,6 +1689,23 @@ const AIMarker = () => {
   useEffect(() => {
     localStorage.setItem(LOCALSTORAGE_KEYS.TIER, tier);
   }, [tier]);
+
+  // Grade boundaries persistence
+  useEffect(() => {
+    localStorage.setItem(LOCALSTORAGE_KEYS.ENABLE_GRADE_BOUNDARIES, enableGradeBoundaries.toString());
+  }, [enableGradeBoundaries]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCALSTORAGE_KEYS.GRADE_BOUNDARIES, JSON.stringify(gradeBoundaries));
+  }, [gradeBoundaries]);
+
+  useEffect(() => {
+    if (boundariesSource) {
+      localStorage.setItem(LOCALSTORAGE_KEYS.BOUNDARIES_SOURCE, boundariesSource);
+    } else {
+      localStorage.removeItem(LOCALSTORAGE_KEYS.BOUNDARIES_SOURCE);
+    }
+  }, [boundariesSource]);
 
   // ADDED: Effect to initialize and update remaining tokens display
   useEffect(() => {
@@ -1723,6 +1801,21 @@ const AIMarker = () => {
     }
     if (totalMarks) prompt += ` The question is out of ${totalMarks} marks.`;
     if (markScheme) prompt += `\n\nThe following mark scheme should be used as a guide if available:\n\`\`\`\n${markScheme}\n\`\`\`\n`;
+    
+    // Add grade boundaries information if enabled
+    if (enableGradeBoundaries && Object.keys(gradeBoundaries).length > 0) {
+      prompt += `\n\nGrade boundaries are defined as follows (minimum percentage required for each grade):\n`;
+      const sortedBoundaries = Object.entries(gradeBoundaries)
+        .filter(([_, threshold]) => threshold > 0)
+        .sort(([a], [b]) => parseInt(b) - parseInt(a));
+      
+      for (const [grade, threshold] of sortedBoundaries) {
+        prompt += `- Grade ${grade}: ${threshold}% or above\n`;
+      }
+      prompt += `- Grade 1: Below ${Math.min(...Object.values(gradeBoundaries).filter(v => v > 0))}%\n`;
+      prompt += `\nNote: These boundaries will be applied automatically based on the achieved marks/total marks ratio. Please still provide your suggested grade in [GRADE:X] format, but the final grade may be adjusted based on these boundaries.\n`;
+    }
+    
     if (textExtract) prompt += `\n\nA text extract has been provided and may be relevant:\n\`\`\`\n${textExtract}\n\`\`\`\n`;
     if (relevantMaterial) prompt += `\n\nOther relevant material to consider:\n\`\`\`\n${relevantMaterial}\n\`\`\`\n`;
     prompt += "\nYour primary goal is to provide constructive feedback and a grade based on the user's answer to the question. Adhere to the provided mark scheme if available."
@@ -2085,7 +2178,19 @@ const AIMarker = () => {
       }
 
 
-      setGrade(extractedGrade);
+      // Calculate grade using boundaries if enabled and we have the necessary data
+      let finalGrade = extractedGrade;
+      if (enableGradeBoundaries && extractedAchievedMarks && (totalMarks || marksMatch?.[2])) {
+        const marksTotal = totalMarks || marksMatch?.[2];
+        const calculatedGrade = calculateGradeFromBoundaries(extractedAchievedMarks, marksTotal, gradeBoundaries);
+        if (calculatedGrade) {
+          finalGrade = calculatedGrade;
+          console.log(`Grade boundaries applied: ${extractedAchievedMarks}/${marksTotal} (${((extractedAchievedMarks/marksTotal)*100).toFixed(1)}%) = Grade ${calculatedGrade}`);
+          toast.info(`Grade calculated using boundaries: ${extractedAchievedMarks}/${marksTotal} = Grade ${calculatedGrade}`);
+        }
+      }
+      
+      setGrade(finalGrade);
       setAchievedMarks(extractedAchievedMarks);
       // If you have a separate state for the parsed mark scheme text:
       // setParsedMarkScheme(extractedMarkSchemeText);
@@ -2124,283 +2229,7 @@ const AIMarker = () => {
     }
   }, [loading, feedback, error, question, answer, subject, examBoard, questionType, userType, markScheme, totalMarks, relevantMaterial, selectedModel, tier, autoMaxTokens, maxTokens, enableThinkingBudget, thinkingBudget, relevantMaterialImage, setHistory, setGrade, setAchievedMarks, setTotalMarks, setSuccess, setLoading, setProcessingProgress]);
 
-  const generateMarkScheme = async () => {
-    // Check if we have a question
-    if (!question) {
-      setError({
-        type: "validation",
-        message: "Please enter a question to generate a mark scheme"
-      });
-      return;
-    }
-    
-    setLoading(true);
-    setError(null);
-    setSuccess({
-      message: "Generating mark scheme..."
-    });
-    
-    // Variables for retry logic
-    let retryCount = 0;
-    const maxRetries = 3;
-    let successFlag = false;
-    const failedModels = new Set();
-    const modelsToTry = [selectedModel, ...Object.values(FALLBACK_MODELS)];
-    
-    try {
-      // We'll start with the selected model and fall back to others if needed
-      let currentModel = selectedModel;
-      let modelLabel = AI_MODELS.find(m => m.value === currentModel)?.label || currentModel;
-      
-      // Detect total marks if not already set
-      const detectedMarks = !totalMarks ? detectTotalMarksFromQuestion(question) : null;
-      const marksToUse = totalMarks || detectedMarks;
-
-      const systemPrompt = `You are an experienced GCSE examiner for ${subject}. Create a detailed mark scheme for the provided question based on ${examBoard} examination standards. 
-      Include clear assessment objectives, point-by-point criteria, level descriptors if applicable, and a total mark allocation. ${marksToUse ? `The question is out of ${marksToUse} marks.` : ''}
-      IMPORTANT: Please provide the mark scheme in plain text format only. Do NOT use any Markdown formatting (e.g., no headings, bold text, lists, etc.).`;
-      
-      const userPrompt = `Please create a detailed mark scheme for this GCSE ${subject} question for the ${examBoard} exam board:
-      
-      QUESTION: ${question}
-      ${marksToUse ? `
-TOTAL MARKS: ${marksToUse}` : ''}
-      
-      FORMAT YOUR RESPONSE AS A PROFESSIONAL MARK SCHEME WITH:
-      1. Clear assessment criteria
-      2. Point-by-point allocation of marks
-      3. Examples of acceptable answers where appropriate
-      4. Level descriptors for extended responses
-      5. Total mark allocation`;
-      
-      let response;
-      let data;
-
-      if (currentModel === "gemini-2.5-flash-preview-05-20") {
-        const requestBody = {
-          contents: [
-            {
-              parts: [
-                {
-                  text: `System: ${systemPrompt}\n\nUser: ${userPrompt}`
-                }
-              ]
-            }
-          ],
-          generationConfig: { // Added generationConfig for consistency, can be tuned
-            temperature: 0.3
-          }
-        };
-         // Add thinking config if enabled (though less critical for mark scheme generation)
-        if (enableThinkingBudget && thinkingBudget > 0 && DEFAULT_THINKING_BUDGETS[currentModel]) {
-          requestBody.config = {
-            thinkingConfig: {
-              thinkingBudget: thinkingBudget
-            }
-          };
-        }
-        
-        try {
-          // Use the DigitalOcean backend URL
-          const geminiApiUrl = constructApiUrl('gemini/generate');
-          
-          console.log('Sending Gemini generate request to:', geminiApiUrl);
-          
-          response = await fetch(geminiApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(60000),
-            cache: 'no-store'
-          });
-          
-          // If we get a 400 error with the specific model ID, try the fallback endpoint
-          if (!response.ok && response.status === 400) {
-            const errorText = await response.text();
-            if (errorText.includes("not a valid model ID")) {
-              console.warn(`Model ${currentModel} not supported by direct Gemini API, falling back to standard chat API`);
-              
-              // Fallback to using the standard chat API endpoint
-              const chatApiUrl = constructApiUrl('chat/completions');
-              
-              console.log('Falling back to chat completions API:', chatApiUrl);
-              
-              response = await fetch(chatApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  model: FALLBACK_MODELS[currentModel], // Use a fallback model
-                  messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                  ],
-                  temperature: 0.3
-                }),
-                signal: AbortSignal.timeout(60000),
-                cache: 'no-store'
-              });
-            } else {
-              throw new Error(`Mark scheme generation failed with Gemini API: ${errorText}`);
-            }
-          }
-        } catch (error) {
-          throw error; // Re-throw to be handled by the main try/catch
-        }
-      } else if (currentModel.startsWith("openai/") || currentModel.startsWith("xai/")) {
-        // GitHub models API for GitHub and Grok models
-        const githubApiUrl = constructApiUrl('github/completions');
-        
-        console.log('Sending GitHub completions request to:', githubApiUrl);
-        
-        response = await fetch(githubApiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: currentModel.startsWith("openai/") || currentModel.startsWith("xai/") 
-              ? currentModel 
-              : "xai/grok-3", // Default to Grok if model pattern doesn't match
-            messages: [
-              { role: "system", content: systemPrompt }, // Changed from "developer" to "system" for compatibility
-              { role: "user", content: userPrompt }
-            ],
-            temperature: 0.7,
-            top_p: 1.0
-          }),
-          signal: AbortSignal.timeout(60000), // 60 second timeout
-          cache: 'no-store'
-        });
-      } else {
-        const chatApiUrl = constructApiUrl('chat/completions');
-        console.log('Sending chat completions request to:', chatApiUrl);
-        
-        response = await fetch(chatApiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: currentModel,
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt }
-            ],
-            temperature: 0.3
-          }),
-          signal: AbortSignal.timeout(60000), // 60 second timeout
-          cache: 'no-store'
-        });
-      }
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Unknown error occurred";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorJson.message || JSON.stringify(errorJson);
-        } catch (e) {
-          errorMessage = errorText || response.statusText;
-        }
-        
-        throw new Error(`Mark scheme generation failed: ${errorMessage}`);
-      }
-      
-      data = await response.json();
-      
-      // Extract the response content
-      let markSchemeText = "";
-      
-      // Log the data structure for debugging
-      console.log("API response format:", Object.keys(data).join(", "));
-      
-      try {
-        if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
-          // Gemini API format
-          if (data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
-            markSchemeText = data.candidates[0].content.parts[0].text;
-            console.log("Using data.candidates[0].content.parts[0].text format");
-          } else if (typeof data.candidates[0].content.text === 'string') {
-            markSchemeText = data.candidates[0].content.text;
-            console.log("Using data.candidates[0].content.text format");
-          }
-        } else if (data.choices && data.choices[0] && data.choices[0].message) {
-          // Standard OpenAI-compatible API format
-          markSchemeText = data.choices[0].message.content;
-          console.log("Using data.choices[0].message.content format");
-        } else if (data.content) {
-          // Simple content format
-          markSchemeText = data.content;
-          console.log("Using data.content format");
-        } else if (typeof data === 'object' && Object.keys(data).length > 0) {
-          // Try to extract any text content from unknown format
-          const extractTextFromObject = (obj) => {
-            if (typeof obj === 'string') return obj;
-            if (!obj || typeof obj !== 'object') return '';
-            
-            // Check for content key
-            if (obj.content && typeof obj.content === 'string') return obj.content;
-            
-            // Check for text key
-            if (obj.text && typeof obj.text === 'string') return obj.text;
-            
-            // Check for message.content
-            if (obj.message && obj.message.content && typeof obj.message.content === 'string') {
-              return obj.message.content;
-            }
-            
-            // Try to find any string that might be the content
-            for (const key in obj) {
-              if (typeof obj[key] === 'string' && obj[key].length > 100) {
-                return obj[key]; // Assumes large string is content
-              }
-              
-              if (typeof obj[key] === 'object') {
-                const extracted = extractTextFromObject(obj[key]);
-                if (extracted) return extracted;
-              }
-            }
-            
-            return '';
-          };
-          
-          markSchemeText = extractTextFromObject(data);
-          if (markSchemeText) {
-            console.log("Extracted content from unknown format");
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing API response:", e);
-      }
-      
-      if (!markSchemeText) {
-        console.warn("Unexpected API response format for mark scheme:", data);
-        throw new Error("Unable to extract mark scheme text from API response");
-      }
-      
-      // Update the mark scheme field
-      setMarkScheme(markSchemeText);
-      setSuccess({
-        message: "Mark scheme generated successfully!"
-      });
-      successFlag = true;
-      
-    } catch (error) {
-      console.error("Error generating mark scheme:", error);
-      
-      if (error.name === 'AbortError') {
-        setError({
-          type: "timeout", 
-          message: "Mark scheme generation timed out.",
-          onRetry: generateMarkScheme
-        });
-      } else {
-        setError({
-          type: "api_error",
-          message: `Failed to generate mark scheme: ${error.message}`,
-          onRetry: generateMarkScheme
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed generateMarkScheme function as it's broken and no longer needed
 
   // Reset form fields
   const resetForm = () => {
@@ -2431,7 +2260,36 @@ TOTAL MARKS: ${marksToUse}` : ''}
   };
 
   // TopBar component
-  const TopBar = ({ version = "2.1.0", backendStatus, remainingTokens }) => {
+  const TopBar = ({ version = "2.1.0", backendStatus, requestLimits }) => {
+    const [requestsRemaining, setRequestsRemaining] = React.useState(null);
+    
+    // Fetch request limits from backend per IP
+    React.useEffect(() => {
+      const fetchRequestLimits = async () => {
+        try {
+          const response = await fetch(constructApiUrl('request-limits'), {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store'
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setRequestsRemaining(data);
+          }
+        } catch (error) {
+          console.warn('Failed to fetch request limits:', error);
+        }
+      };
+      
+      if (backendStatus === 'online') {
+        fetchRequestLimits();
+        // Refresh every 30 seconds
+        const interval = setInterval(fetchRequestLimits, 30000);
+        return () => clearInterval(interval);
+      }
+    }, [backendStatus]);
+
     return (
       <div className="sticky top-0 z-10 flex items-center justify-between py-2 px-4 border-b border-border bg-card shadow-sm backdrop-blur-sm bg-opacity-90">
         <div className="flex items-center space-x-4">
@@ -2440,37 +2298,52 @@ TOTAL MARKS: ${marksToUse}` : ''}
           {backendStatus && (
             <div className="hidden sm:flex items-center space-x-1">
               <div className={`h-2 w-2 rounded-full ${
-                backendStatus === 'online' ? 'bg-green-500' : 
-                backendStatus === 'rate_limited' ? 'bg-yellow-500' : 
+                backendStatus === 'online' ? 'bg-green-500' :
+                backendStatus === 'rate_limited' ? 'bg-yellow-500' :
                 'bg-red-500'
               }`}></div>
               <div className="text-xs text-muted-foreground">{
-                backendStatus === 'online' ? 'API Connected' : 
-                backendStatus === 'rate_limited' ? 'API Rate Limited' : // More specific message
+                backendStatus === 'online' ? 'API Connected' :
+                backendStatus === 'rate_limited' ? 'API Rate Limited' :
                 'API Offline'
               }</div>
             </div>
           )}
-           {/* ADDED: Remaining Tokens Display */}
+          {/* UPDATED: Requests Display with Model-specific Tooltips */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="text-xs text-muted-foreground hidden sm:flex items-center">
-                  <Zap size={12} className="mr-1" /> 
-                  <span>{remainingTokens} requests left</span>
+                <div className="text-xs text-muted-foreground hidden sm:flex items-center cursor-help">
+                  <Zap size={12} className="mr-1" />
+                  <span>{requestsRemaining ? `${requestsRemaining.o3 || 1} requests left` : 'Requests Left'}</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>
-                {/* Removed: <p>Daily request limit: 500. Resets midnight.</p> */}
+              <TooltipContent side="bottom" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <div className="font-semibold">Requests remaining per IP:</div>
+                  {requestsRemaining ? (
+                    <>
+                      <div>O3: {requestsRemaining.o3 || 1} left</div>
+                      <div>O4 Mini: {requestsRemaining['o4-mini'] || 2} left</div>
+                      <div>Grok-3: {requestsRemaining['xai/grok-3'] || 1} left</div>
+                      <div>Others: {requestsRemaining.general || 'Unlimited'}</div>
+                      <div className="text-muted-foreground mt-1">
+                        O3 limited to 1 use per day. Limits are per IP address.
+                      </div>
+                    </>
+                  ) : (
+                    <div>Loading limits...</div>
+                  )}
+                </div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
         <div className="flex items-center space-x-2">
           <ThemeToggle />
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => setShowKeyboardShortcuts(true)}
           >
@@ -2478,12 +2351,11 @@ TOTAL MARKS: ${marksToUse}` : ''}
             <span className="sr-only">Keyboard shortcuts</span>
           </Button>
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => setShowGuide(!showGuide)}
-            // ref={node => setHelpButtonRef(node)} // Ref seems unused here, can be removed if showHelp is also unused.
           >
             <HelpCircle size={18} />
             <span className="sr-only">Help</span>
@@ -2593,7 +2465,22 @@ TOTAL MARKS: ${marksToUse}` : ''}
 - Apply a consistent marking standard throughout the assessment
 - Acknowledge partial understanding where appropriate`;
       }
-      if (currentModelForItem === "microsoft/mai-ds-r1:free") { 
+      
+      // Add grade boundaries information if enabled
+      if (enableGradeBoundaries && Object.keys(gradeBoundaries).length > 0) {
+        basePrompt += `\n\nGRADE BOUNDARIES (minimum percentage required):\n`;
+        const sortedBoundaries = Object.entries(gradeBoundaries)
+          .filter(([_, threshold]) => threshold > 0)
+          .sort(([a], [b]) => parseInt(b) - parseInt(a));
+        
+        for (const [grade, threshold] of sortedBoundaries) {
+          basePrompt += `- Grade ${grade}: ${threshold}% or above\n`;
+        }
+        basePrompt += `- Grade 1: Below ${Math.min(...Object.values(gradeBoundaries).filter(v => v > 0))}%\n`;
+        basePrompt += `\nNote: These boundaries will be applied automatically based on marks achieved. Please still provide your suggested grade in [GRADE:X] format.\n`;
+      }
+      
+      if (currentModelForItem === "microsoft/mai-ds-r1:free") {
         basePrompt += `\n\n5. THINKING PROCESS:\n- First, analyze the student's answer carefully...\n- Mark your thinking process with [THINKING] and your final feedback with [FEEDBACK]`;
       }
       return basePrompt;
@@ -2678,10 +2565,19 @@ TOTAL MARKS: ${marksToUse}` : ''}
       }
 
       const gradeValueMatch = apiResponseContent.match(/\[GRADE:(\d+)\]/i);
-      const itemGrade = gradeValueMatch?.[1] || null;
+      let itemGrade = gradeValueMatch?.[1] || null;
       const marksValueMatch = apiResponseContent.match(/\[MARKS:(\d+)\/(\d+)\]/i);
       const itemAchievedMarks = marksValueMatch?.[1] || null;
       const itemTotalMarks = marksValueMatch?.[2] || itemData.totalMarks;
+      
+      // Apply grade boundaries if enabled for bulk processing
+      if (enableGradeBoundaries && itemAchievedMarks && itemTotalMarks) {
+        const calculatedGrade = calculateGradeFromBoundaries(itemAchievedMarks, itemTotalMarks, gradeBoundaries);
+        if (calculatedGrade) {
+          itemGrade = calculatedGrade;
+          console.log(`Bulk item ${itemIndex + 1}: Grade boundaries applied: ${itemAchievedMarks}/${itemTotalMarks} (${((itemAchievedMarks/itemTotalMarks)*100).toFixed(1)}%) = Grade ${calculatedGrade}`);
+        }
+      }
       
       const finalFeedback = apiResponseContent.replace(/\[GRADE:\d+\]/gi, '').replace(/\[MARKS:\d+\/\d+\]/gi, '').trim();
       
@@ -3214,7 +3110,7 @@ Please respond to their question clearly and constructively. Keep your answer co
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <TopBar version="2.1.3" backendStatus={backendStatus} remainingTokens={remainingRequestTokens} />
+      <TopBar version="2.1.3" backendStatus={backendStatus} requestLimits={remainingRequestTokens} />
       
       {/* ADDED: OCR Preview Dialog (Sheet was mentioned, but Dialog is simpler here) */}
       <Dialog open={showOcrPreviewDialog} onOpenChange={(open) => {
@@ -3621,21 +3517,7 @@ Please respond to their question clearly and constructively. Keep your answer co
                                 Adding a mark scheme will enhance feedback with detailed criteria analysis
                               </div>
                             </div>
-                            <div className="flex gap-2">
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={generateMarkScheme}
-                              disabled={loading || !question || backendStatusRef.current !== 'online'}
-                              ref={markSchemeButtonRef}
-                            >
-                              {loading ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FilePlus className="mr-1 h-3 w-3" />}
-                              Generate
-                            </Button>
                           </div>
-                        </div>
                         <Textarea
                           id="markScheme"
                           placeholder="Enter mark scheme details..."
@@ -3953,6 +3835,142 @@ Please respond to their question clearly and constructively. Keep your answer co
                           )}
                         </div>
                       )}
+                      
+                      {/* Grade Boundaries Section */}
+                      <div className="space-y-2 pt-2 border-t border-border mt-4">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="enableGradeBoundaries" className="text-sm flex items-center">
+                            Enable Grade Boundaries
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <HelpCircle className="h-3 w-3 ml-1.5 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p>When enabled, the AI will use these grade boundaries to assign grades based on percentage scores. Useful for standardizing grades across assessments.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </Label>
+                          <Switch
+                            id="enableGradeBoundaries"
+                            checked={enableGradeBoundaries}
+                            onCheckedChange={setEnableGradeBoundaries}
+                          />
+                        </div>
+                        
+                        {enableGradeBoundaries && (
+                          <div className="space-y-3 mt-3">
+                            <div className="text-xs text-muted-foreground">
+                              Set the minimum percentage required for each grade. Grades are awarded based on achieved marks / total marks.
+                              Use "Fetch Official" to get authentic grade boundaries from exam board sources.
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              {[
+                                { grade: '9', label: 'Grade 9 (A**)' },
+                                { grade: '8', label: 'Grade 8 (A*)' },
+                                { grade: '7', label: 'Grade 7 (A)' },
+                                { grade: '6', label: 'Grade 6 (B)' },
+                                { grade: '5', label: 'Grade 5 (C)' },
+                                { grade: '4', label: 'Grade 4 (C-)' },
+                                { grade: '3', label: 'Grade 3 (D)' },
+                                { grade: '2', label: 'Grade 2 (E)' },
+                              ].map(({ grade, label }) => (
+                                <div key={grade} className="flex items-center gap-2">
+                                  <Label className="text-xs min-w-[80px]">{label}:</Label>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      value={gradeBoundaries[grade] || ''}
+                                      onChange={(e) => {
+                                        const value = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                        setGradeBoundaries(prev => ({
+                                          ...prev,
+                                          [grade]: value
+                                        }));
+                                      }}
+                                      className="w-16 h-7 text-xs"
+                                      placeholder="0"
+                                    />
+                                    <span className="text-xs text-muted-foreground">%</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs h-7"
+                                onClick={() => {
+                                  // Set typical GCSE grade boundaries
+                                  setGradeBoundaries({
+                                    '9': 85,
+                                    '8': 75,
+                                    '7': 65,
+                                    '6': 55,
+                                    '5': 45,
+                                    '4': 35,
+                                    '3': 25,
+                                    '2': 15
+                                  });
+                                  setBoundariesSource("Default GCSE Guidelines");
+                                }}
+                              >
+                                Load GCSE Defaults
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs h-7"
+                                onClick={() => {
+                                  // Set A-Level style boundaries
+                                  setGradeBoundaries({
+                                    '9': 90, // A*
+                                    '8': 80, // A
+                                    '7': 70, // B
+                                    '6': 60, // C
+                                    '5': 50, // D
+                                    '4': 40, // E
+                                    '3': 30, // U
+                                    '2': 20  // U
+                                  });
+                                  setBoundariesSource("A-Level Style Guidelines");
+                                }}
+                              >
+                                Load A-Level Style
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs h-7"
+                                onClick={() => {
+                                  setGradeBoundaries({});
+                                  setBoundariesSource(null);
+                                }}
+                              >
+                                Clear All
+                              </Button>
+                            </div>
+                            
+                            {boundariesSource && (
+                              <div className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Boundaries loaded from: {boundariesSource}
+                              </div>
+                            )}
+                            
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong>Note:</strong> Grade 1 is automatically assigned to scores below Grade 2 threshold.
+                              If total marks are not specified, percentage grading may not be available.
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -4369,4 +4387,5 @@ Please respond to their question clearly and constructively. Keep your answer co
 }
 
 export default AIMarker;
+
 

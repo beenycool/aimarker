@@ -28,6 +28,61 @@ router.get('/health', (req, res) => {
   }
 });
 
+// Request limits endpoint - returns remaining requests per IP for each model
+router.get('/request-limits', (req, res) => {
+  try {
+    const ip = req.ip;
+    const now = Date.now();
+    const RPD = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+    
+    // Import the cache and modelLimits from rateLimit middleware
+    const { cache, modelLimits } = require('../middleware/rateLimit');
+    
+    const limits = {
+      o3: 1, // Default to 1/day for O3
+      'o4-mini': 2, // Default to 2 for O4 Mini
+      'xai/grok-3': 1, // Default to 1 for Grok-3
+      general: 'Unlimited' // For other models
+    };
+    
+    // Check actual usage from cache for each model
+    const modelChecks = {
+      'o3': 'azure-openai-o3',
+      'o4-mini': 'azure-openai-o4-mini',
+      'xai/grok-3': 'xAI Grok-3'
+    };
+    
+    Object.keys(modelChecks).forEach(frontendModel => {
+      const backendModel = modelChecks[frontendModel];
+      const dailyCacheKey = `global_daily_${backendModel}`;
+      const dailyRecord = cache?.get?.(dailyCacheKey) || { count: 0, resetTime: now + RPD };
+      
+      // Reset if past reset time
+      if (now > dailyRecord.resetTime) {
+        dailyRecord.count = 0;
+      }
+      
+      // Calculate remaining requests
+      const modelLimit = modelLimits[backendModel];
+      if (modelLimit) {
+        const remaining = Math.max(0, modelLimit.daily - dailyRecord.count);
+        limits[frontendModel] = remaining;
+      }
+    });
+    
+    res.json(limits);
+  } catch (error) {
+    console.error('Error fetching request limits:', error);
+    // Return default limits on error
+    res.json({
+      o3: 1,
+      'o4-mini': 2,
+      'xai/grok-3': 1,
+      general: 'Unlimited'
+    });
+  }
+});
+
 // Auth routes
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);

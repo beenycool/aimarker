@@ -119,4 +119,4 @@ const globalRateLimiter = (req, res, next) => {
   next();
 };
 
-module.exports = { globalRateLimiter, getModelFromRequest };
+module.exports = { globalRateLimiter, getModelFromRequest, cache, modelLimits };
