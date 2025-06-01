@@ -238,11 +238,14 @@ const BackendStatusChecker = ({ onStatusChange }) => {
   const { checkBackendStatus } = useBackendStatus(getAPI_BASE_URL());
   
   const checkStatus = useCallback(async () => {
+    console.log('[STATUS-CHECK] checkStatus function called');
     try {
       setStatus('checking');
+      console.log('[STATUS-CHECK] Set status to checking, calling checkBackendStatus()');
       
       // Check if the backend is reachable
       const result = await checkBackendStatus();
+      console.log('[STATUS-CHECK] checkBackendStatus returned:', result);
       setLastChecked(new Date().toLocaleTimeString());
       
       if (!result.ok) {
