@@ -87,11 +87,20 @@ export const useBackendStatus = (API_BASE_URL) => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 12000); // Increased timeout to 12 seconds
           
-          // Construct the health endpoint URL directly
-          const healthEndpoint = `${API_BASE_URL}/api/health`;
+          // Import and use the getApiBaseUrl function directly to ensure correct URL
+          let baseUrl;
+          try {
+            const { getApiBaseUrl } = await import('../lib/api-helpers.js');
+            baseUrl = getApiBaseUrl();
+          } catch (importError) {
+            console.warn('[HEALTH-CHECK] Failed to import getApiBaseUrl, using fallback:', importError);
+            baseUrl = API_BASE_URL;
+          }
+          const healthEndpoint = `${baseUrl}/api/health`;
           
           console.log(`[HEALTH-CHECK] Checking backend health at ${healthEndpoint}`);
           console.log(`[HEALTH-CHECK] API_BASE_URL parameter: ${API_BASE_URL}`);
+          console.log(`[HEALTH-CHECK] Resolved base URL: ${baseUrl}`);
           console.log(`[HEALTH-CHECK] Starting fetch request...`);
           
           const response = await fetch(`${healthEndpoint}?timestamp=${Date.now()}`, {
