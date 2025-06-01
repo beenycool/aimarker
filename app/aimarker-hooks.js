@@ -76,13 +76,17 @@ export const useSubjectDetection = (subjectKeywords, loading) => {
 // Backend status checker hook
 export const useBackendStatus = (API_BASE_URL) => {
   const checkBackendStatus = useCallback(async (model) => {
+    console.log('[HEALTH-CHECK] checkBackendStatus function called with model:', model);
     try {
       // Using DigitalOcean backend - no special handling needed
 
       let retryCount = 0;
       const maxRetries = 3; // Try up to 4 times total (initial + 3 retries)
       
+      console.log('[HEALTH-CHECK] Starting health check with max retries:', maxRetries);
+      
       while (retryCount <= maxRetries) {
+        console.log(`[HEALTH-CHECK] Retry attempt ${retryCount + 1}/${maxRetries + 1}`);
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 12000); // Increased timeout to 12 seconds
