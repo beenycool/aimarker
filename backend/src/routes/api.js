@@ -7,22 +7,52 @@ const authController = require('../controllers/authController');
 // const { authenticateToken, isAdmin } = require('../middleware/auth'); // isAdmin removed
 const { authenticateToken } = require('../middleware/auth'); // isAdmin removed from imports
 const { globalRateLimiter } = require('../middleware/rateLimit');
+const { moderateUserInput, llamaGuard } = require('../middleware/llamaguard');
 
 // Health check route
 router.get('/health', (req, res) => {
   try {
+    const moderationStats = llamaGuard.getModerationStats();
+    
     res.status(200).json({
       status: 'ok',
       version: '1.0.0',
       openaiClient: true,
       apiKeyConfigured: true,
+      moderation: {
+        enabled: moderationStats.configured,
+        service: moderationStats.service,
+        model: moderationStats.model,
+        dailyLimit: moderationStats.dailyLimit
+      },
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Health check error:', error);
-    res.status(500).json({ 
-      status: 'error', 
+    res.status(500).json({
+      status: 'error',
       message: 'Health check failed',
+      error: error.message
+    });
+  }
+});
+
+// Moderation service health check
+router.get('/moderation/health', (req, res) => {
+  try {
+    const stats = llamaGuard.getModerationStats();
+    res.json({
+      status: stats.configured ? 'configured' : 'not_configured',
+      service: stats.service,
+      model: stats.model,
+      dailyLimit: stats.dailyLimit,
+      costPerRequest: stats.costPerRequest,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Moderation health check error:', error);
+    res.status(500).json({
+      status: 'error',
       error: error.message
     });
   }
@@ -114,7 +144,7 @@ router.get('/auth/user', authenticateToken, authController.getCurrentUser);
 // router.delete('/admin/guilds/:id', authenticateToken, isAdmin, adminController.adminDeleteGuild);
 
 // GitHub model API routes
-router.post('/github/completions', globalRateLimiter, async (req, res) => {
+router.post('/github/completions', globalRateLimiter, moderateUserInput, async (req, res) => {
   try {
     const { messages } = req.body;
     if (!messages || !Array.isArray(messages)) {
@@ -218,7 +248,7 @@ router.post('/github/completions', globalRateLimiter, async (req, res) => {
 });
 
 // Route for OpenRouter models
-router.post('/chat/completions', globalRateLimiter, async (req, res) => {
+router.post('/chat/completions', globalRateLimiter, moderateUserInput, async (req, res) => {
   try {
     const { model, messages, stream } = req.body;
     if (!model || !messages || !Array.isArray(messages)) {
@@ -289,7 +319,7 @@ router.post('/chat/completions', globalRateLimiter, async (req, res) => {
 });
 
 // Route for Direct Gemini API (e.g., gemini-2.5-flash-preview-05-20)
-router.post('/gemini/generate', globalRateLimiter, async (req, res) => {
+router.post('/gemini/generate', globalRateLimiter, moderateUserInput, async (req, res) => {
   try {
     const { contents, generationConfig, model, system_instruction } = req.body; 
     if (!contents || !Array.isArray(contents)) {
