@@ -376,4 +376,125 @@ router.post('/gemini/generate', globalRateLimiter, moderateUserInput, async (req
   }
 });
 
+// Route for Gemini API Streaming
+router.post('/gemini/stream', globalRateLimiter, moderateUserInput, async (req, res) => {
+  try {
+    const { contents, generationConfig, model, system_instruction } = req.body;
+    if (!contents || !Array.isArray(contents)) {
+      return res.status(400).json({ error: 'Invalid request: contents array is required.' });
+    }
+
+    const geminiModel = model || 'gemini-2.5-flash-preview-05-20';
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiApiKey) {
+      console.error('Gemini API key not configured');
+      return res.status(500).json({ error: 'Gemini API key not configured on the server.' });
+    }
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+    res.flushHeaders();
+
+    let requestBody = {
+      contents,
+      generationConfig: generationConfig || { temperature: 0.7, topP: 1.0 },
+    };
+
+    // Add system_instruction if provided
+    if (system_instruction) {
+      requestBody.system_instruction = system_instruction;
+    }
+
+    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:streamGenerateContent?alt=sse&key=${geminiApiKey}`;
+
+    console.log('Sending streaming request to Gemini API:', geminiApiUrl);
+
+    const geminiResponse = await fetch(geminiApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', geminiResponse.status, errorText);
+      res.write(`event: error\ndata: ${JSON.stringify({ error: `Gemini API Error (${geminiResponse.status})` })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Process the streaming response
+    if (geminiResponse.body) {
+      const reader = geminiResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
+        // Process complete lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              res.write(`data: [DONE]\n\n`);
+              continue;
+            }
+
+            try {
+              const geminiEvent = JSON.parse(data);
+              
+              // Transform Gemini response to OpenAI-compatible format
+              if (geminiEvent.candidates && geminiEvent.candidates[0]?.content?.parts) {
+                const text = geminiEvent.candidates[0].content.parts
+                  .filter(part => part.text)
+                  .map(part => part.text)
+                  .join('');
+
+                if (text) {
+                  const openAIEvent = {
+                    choices: [{
+                      delta: { content: text },
+                      index: 0
+                    }]
+                  };
+                  res.write(`data: ${JSON.stringify(openAIEvent)}\n\n`);
+                }
+              }
+            } catch (parseError) {
+              console.error('Error parsing Gemini event:', parseError);
+            }
+          }
+        }
+      }
+    }
+
+    res.write(`data: [DONE]\n\n`);
+    res.end();
+
+  } catch (error) {
+    console.error('Gemini streaming error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
+    }
+  }
+});
+
 module.exports = router;

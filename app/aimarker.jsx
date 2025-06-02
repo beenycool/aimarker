@@ -1946,37 +1946,73 @@ const AIMarker = () => {
     
           try {        // Record user event - with error handling for missing endpoint        try {          const eventApiUrl = constructApiUrl('auth/events');          console.log('Sending event to:', eventApiUrl);                    const eventResponse = await fetch(eventApiUrl, {            method: 'POST',            headers: { 'Content-Type': 'application/json' },            body: JSON.stringify({              eventType: 'question_submitted_stream',              eventData: {                model: currentModelForRequestRef.current,                questionLength: question?.length || 0,                answerLength: answer?.length || 0,                subject: subject              }            }),            cache: 'no-store'          });                    if (!eventResponse.ok) {            console.warn(`Event recording failed with status: ${eventResponse.status}`);            // Continue with the main request even if event recording fails          }        } catch (eventError) {          console.warn("Failed to record user event:", eventError);          // For GitHub Pages static export, this is expected and we can ignore it          console.log('Note: In static export mode, some API failures are expected');        }
       
-      const requestBodyPayload = {
-        model: currentModelForRequestRef.current.startsWith("openai/") || currentModelForRequestRef.current.startsWith("xai/") 
-          ? currentModelForRequestRef.current 
-          : "xai/grok-3", // Default to Grok if model pattern doesn't match
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        temperature: 0.7,
-        top_p: 1.0,
-        stream: true
-      };
+      let requestBodyPayload;
+      let completionsApiUrl;
       
-      // Add image if relevant for Gemini (assuming /api/github/completions handles this)
-      if (currentModelForRequestRef.current.startsWith("gemini") && relevantMaterialImage && relevantMaterialImageBase64) {
-        // The backend /api/github/completions needs to be adapted to pass this to Gemini if it's the intermediary
-        // For simplicity, we assume the backend handles this structure.
-        // This part might need adjustment based on how the backend expects image data for Gemini streams.
-        requestBodyPayload.messages[1].content += "\n\nIMAGE PROVIDED: An image has been attached. Please analyze this image.";
-        // The actual image data would need to be handled by the backend if it's proxying to Gemini.
-        // If hitting Gemini directly, the payload structure for images with streaming would be different.
-        // For this exercise, we'll assume the backend's /github/completions is smart enough.
+      // Handle Gemini models differently
+      if (currentModelForRequestRef.current === "gemini-2.5-flash-preview-05-20") {
+        // Format for Gemini direct API streaming
+        requestBodyPayload = {
+          model: currentModelForRequestRef.current,
+          contents: [
+            {
+              parts: [
+                {
+                  text: `${systemPrompt}\n\n${userPrompt}`
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            topP: 1.0
+          }
+        };
+        
+        // Add thinking config if enabled
+        if (enableThinkingBudget && thinkingBudget > 0) {
+          requestBodyPayload.config = {
+            thinkingConfig: {
+              thinkingBudget: thinkingBudget
+            }
+          };
+        }
+        
+        // Add image handling for Gemini (if implemented in backend)
+        if (relevantMaterialImage && relevantMaterialImageBase64) {
+          requestBodyPayload.contents[0].parts[0].text += "\n\nIMAGE PROVIDED: An image has been attached. Please analyze this image.";
+        }
+        
+        completionsApiUrl = constructApiUrl('gemini/stream');
+        console.log('Sending Gemini streaming request to:', completionsApiUrl);
+      } else {
+        // Format for OpenRouter/GitHub models
+        requestBodyPayload = {
+          model: currentModelForRequestRef.current.startsWith("openai/") || currentModelForRequestRef.current.startsWith("xai/")
+            ? currentModelForRequestRef.current
+            : "xai/grok-3", // Default to Grok if model pattern doesn't match
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: 0.7,
+          top_p: 1.0,
+          stream: true
+        };
+        
+        completionsApiUrl = constructApiUrl('github/completions');
+        console.log('Sending OpenRouter streaming request to:', completionsApiUrl);
       }
-
-
-      // Use the DigitalOcean backend URL
-      const completionsApiUrl = constructApiUrl('github/completions');
       
-      console.log('Sending completions request to:', completionsApiUrl);
-      
-      const response = await fetch(completionsApiUrl, {        method: 'POST',        headers: {          'Content-Type': 'application/json',          'Accept': 'text/event-stream',        },        body: JSON.stringify(requestBodyPayload),        cache: 'no-store'      });
+      const response = await fetch(completionsApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(requestBodyPayload),
+        cache: 'no-store'
+      });
 
       if (!response.ok) {
         const errorStatus = response.status;
