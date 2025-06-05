@@ -17,7 +17,6 @@ describe('GamesPage', () => {
     test('renders the main heading and navigation tabs', () => {
       render(<GamesPage />);
       
-      expect(screen.getByText('School Football Team')).toBeInTheDocument();
       expect(screen.getByText('FIFA-Style Football Management System')).toBeInTheDocument();
       
       // Check all tabs are present
@@ -130,7 +129,7 @@ describe('GamesPage', () => {
       
       // Mock localStorage to return a player
       const mockTeam = {
-        name: 'School Football Team',
+        name: 'Test Team',
         players: [{
           id: '1',
           name: 'Test Player',
@@ -170,7 +169,7 @@ describe('GamesPage', () => {
     test('calculates team statistics correctly', () => {
       // Mock localStorage with test data
       const mockTeam = {
-        name: 'School Football Team',
+        name: 'Test Team',
         players: [
           {
             id: '1',
@@ -215,7 +214,7 @@ describe('GamesPage', () => {
   describe('Leaderboard Functionality', () => {
     test('displays top scorers correctly', () => {
       const mockTeam = {
-        name: 'School Football Team',
+        name: 'Test Team',
         players: [
           {
             id: '1', name: 'Top Scorer', position: 'ST',
@@ -247,7 +246,7 @@ describe('GamesPage', () => {
 
     test('displays highest rated players correctly', () => {
       const mockTeam = {
-        name: 'School Football Team',
+        name: 'Test Team',
         players: [
           {
             id: '1', name: 'High Rated', position: 'ST',
@@ -341,14 +340,14 @@ describe('GamesPage', () => {
       
       // Check that localStorage.setItem was called
       expect(localStorage.setItem).toHaveBeenCalledWith(
-        'schoolFootballTeam',
+        'footballTeam',
         expect.stringContaining('Test Player')
       );
     });
 
     test('loads team data from localStorage on mount', () => {
       const mockTeam = {
-        name: 'School Football Team',
+        name: 'Test Team',
         players: [{
           id: '1',
           name: 'Loaded Player',
@@ -368,7 +367,7 @@ describe('GamesPage', () => {
       
       // Check that the loaded player is displayed
       expect(screen.getByText('Loaded Player')).toBeInTheDocument();
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('schoolFootballTeam');
+      expect(localStorageMock.getItem).toHaveBeenCalledWith('footballTeam');
     });
   });
 
@@ -377,7 +376,7 @@ describe('GamesPage', () => {
       const user = userEvent.setup();
       
       const mockTeam = {
-        name: 'School Football Team',
+        name: 'Test Team',
         players: [{
           id: '1',
           name: 'Player To Delete',

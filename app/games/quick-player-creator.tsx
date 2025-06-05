@@ -53,11 +53,11 @@ const QUICK_TEAMS = {
   'premier-league-stars': {
     name: 'Premier League Stars',
     players: [
-      { name: 'Harry Kane', position: 'ST', pace: 85, shooting: 95, passing: 82, dribbling: 85, defending: 40, physical: 88 },
-      { name: 'Kevin De Bruyne', position: 'CAM', pace: 78, shooting: 88, passing: 96, dribbling: 90, defending: 65, physical: 82 },
-      { name: 'Virgil van Dijk', position: 'CB', pace: 82, shooting: 50, passing: 85, dribbling: 70, defending: 95, physical: 92 },
-      { name: 'Mohamed Salah', position: 'RW', pace: 92, shooting: 90, passing: 82, dribbling: 93, defending: 45, physical: 78 },
-      { name: 'Alisson', position: 'GK', pace: 60, shooting: 30, passing: 75, dribbling: 50, defending: 94, physical: 88 }
+      { name: 'Player A', position: 'ST', pace: 85, shooting: 95, passing: 82, dribbling: 85, defending: 40, physical: 88 },
+      { name: 'Player B', position: 'CAM', pace: 78, shooting: 88, passing: 96, dribbling: 90, defending: 65, physical: 82 },
+      { name: 'Player C', position: 'CB', pace: 82, shooting: 50, passing: 85, dribbling: 70, defending: 95, physical: 92 },
+      { name: 'Player D', position: 'RW', pace: 92, shooting: 90, passing: 82, dribbling: 93, defending: 45, physical: 78 },
+      { name: 'Player E', position: 'GK', pace: 60, shooting: 30, passing: 75, dribbling: 50, defending: 94, physical: 88 }
     ]
   },
   'la-liga-legends': {
@@ -313,7 +313,7 @@ export function QuickPlayerCreator({ onCreatePlayer, onCreateMultiple }: QuickPl
             <textarea
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Enter multiple names (one per line):&#10;Cristiano Ronaldo&#10;Lionel Messi&#10;Neymar Jr"
+              placeholder="Enter multiple names (one per line):&#10;Player One&#10;Player Two&#10;Player Three"
               className="w-full h-20 p-2 border rounded text-sm mt-2 resize-none"
             />
             <Button 

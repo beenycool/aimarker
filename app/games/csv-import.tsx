@@ -18,11 +18,11 @@ export function CSVImport({ onImportPlayers }: CSVImportProps) {
   const [importMessage, setImportMessage] = useState('');
 
   const sampleCSV = `Name,Position,Pace,Shooting,Passing,Dribbling,Defending,Physical
-Cristiano Ronaldo,ST,85,95,82,88,35,88
-Lionel Messi,RW,88,92,95,96,38,75
-Kevin De Bruyne,CAM,75,88,96,90,65,82
-Virgil van Dijk,CB,82,50,85,70,95,92
-Alisson,GK,60,30,75,50,94,88`;
+Player One,ST,85,95,82,88,35,88
+Player Two,RW,88,92,95,96,38,75
+Player Three,CAM,75,88,96,90,65,82
+Player Four,CB,82,50,85,70,95,92
+Player Five,GK,60,30,75,50,94,88`;
 
   const downloadSampleCSV = () => {
     const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(sampleCSV);

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Plus, Trophy, Target, Users, Star, Edit2, Trash2, Download, RotateCcw, Play, Settings, Clock, BarChart3, Award, Grid3X3, Database, Calendar } from 'lucide-react';
-import { loadSampleData, clearAllData } from './demo-data';
+import { clearAllData } from './demo-data';
 import { Player, Team, Match } from './types';
 import { FootballSimulation, SimulationSettings, SimulationResult, GameEvent } from './simulation-engine';
 import { FormationView } from './formation-view';
@@ -55,7 +55,7 @@ const getRatingColor = (rating: number) => {
 
 export default function GamesPage() {
   const [team, setTeam] = useState<Team>({
-    name: 'School Football Team',
+    name: '',
     players: [],
     matches: []
   });
@@ -105,7 +105,7 @@ export default function GamesPage() {
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const savedTeam = localStorage.getItem('schoolFootballTeam');
+    const savedTeam = localStorage.getItem('footballTeam');
     if (savedTeam) {
       setTeam(JSON.parse(savedTeam));
     }
@@ -113,7 +113,7 @@ export default function GamesPage() {
 
   // Save data to localStorage whenever team changes
   useEffect(() => {
-    localStorage.setItem('schoolFootballTeam', JSON.stringify(team));
+    localStorage.setItem('footballTeam', JSON.stringify(team));
   }, [team]);
 
   const calculateOverallRating = (player: Partial<Player>) => {
@@ -260,10 +260,10 @@ export default function GamesPage() {
   };
 
   const handleLoadSampleData = () => {
-    const loaded = loadSampleData();
-    if (loaded) {
+    // No sample data available
+    if (false) {
       // Force reload from localStorage
-      const savedTeam = localStorage.getItem('schoolFootballTeam');
+      const savedTeam = localStorage.getItem('footballTeam');
       if (savedTeam) {
         setTeam(JSON.parse(savedTeam));
       }
@@ -273,7 +273,7 @@ export default function GamesPage() {
   const handleClearAllData = () => {
     clearAllData();
     setTeam({
-      name: 'School Football Team',
+      name: '',
       players: [],
       matches: []
     });
@@ -281,12 +281,12 @@ export default function GamesPage() {
 
   const handleImportTeam = (importedTeam: Team) => {
     setTeam(importedTeam);
-    localStorage.setItem('schoolFootballTeam', JSON.stringify(importedTeam));
+    localStorage.setItem('footballTeam', JSON.stringify(importedTeam));
   };
 
   const handleTeamUpdate = (updatedTeam: Team) => {
     setTeam(updatedTeam);
-    localStorage.setItem('schoolFootballTeam', JSON.stringify(updatedTeam));
+    localStorage.setItem('footballTeam', JSON.stringify(updatedTeam));
   };
 
   const handleQuickCreatePlayer = (player: Player) => {
@@ -326,7 +326,7 @@ export default function GamesPage() {
     };
 
     setTeam(updatedTeam);
-    localStorage.setItem('schoolFootballTeam', JSON.stringify(updatedTeam));
+    localStorage.setItem('footballTeam', JSON.stringify(updatedTeam));
   };
 
   const handleViewPlayerStats = (player: Player) => {
