@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import LandingPage from '@/components/landing-page';
+import AIMarkerClientWrapper from './client-wrapper';
 
 export const metadata: Metadata = {
   title: 'AI GCSE Marker | Intelligent Essay Grading & Feedback',
@@ -13,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <LandingPage />;
+  return <AIMarkerClientWrapper />;
 }
