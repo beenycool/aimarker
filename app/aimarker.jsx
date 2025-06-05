@@ -83,7 +83,7 @@ const AI_MODELS = [
   { value: "xai/grok-3", label: "Grok-3", description: "X AI Model (Grok)" },
   { value: "xai/grok-3-mini", label: "Grok-3 Mini", description: "Smaller, faster X AI Model" },
   { value: "gemini-2.5-flash-preview-05-20", label: "Gemini 2.5 Flash Preview", description: "Best quality with faster response times" },
-  { value: "microsoft/mai-ds-r1:free", label: "R1 (thinking model)", description: "Most thorough reasoning process (may take 1-2 minutes)" }, // Unlimited (OpenRouter, no usage limits)
+  { value: "deepseek/deepseek-r1-0528:free", label: "DeepSeek R1", description: "Most thorough reasoning process (may take 1-2 minutes)" }, // Unlimited (OpenRouter, no usage limits)
   { value: "deepseek/deepseek-chat-v3-0324:free", label: "V3 (balanced model)", description: "Balanced speed and quality" },
   { value: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 Flash (OCR only)", description: "Special model for OCR with exam board OCR" }
 ];
@@ -92,7 +92,7 @@ const AI_MODELS = [
 const FALLBACK_MODELS = {
   "gemini-2.5-flash-preview-05-20": "deepseek/deepseek-chat-v3-0324:free",
   "deepseek/deepseek-chat-v3-0324:free": "microsoft/mai-ds-r1:free",
-  "microsoft/mai-ds-r1:free": "gemini-2.5-flash-preview-05-20", // Fallback to Gemini Flash (was Gemini Pro)
+  "deepseek/deepseek-r1-0528:free": "gemini-2.5-flash-preview-05-20", // Fallback to Gemini Flash (was Gemini Pro)
   "o3": "o4-mini", // Fallback for O3
   "o4-mini": "deepseek/deepseek-chat-v3-0324:free", // Fallback for O4 Mini
   "xai/grok-3": "deepseek/deepseek-chat-v3-0324:free", // Fallback for Grok-3

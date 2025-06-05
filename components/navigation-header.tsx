@@ -39,6 +39,14 @@ export function NavigationHeader() {
   return (
     <nav className="fixed top-2 right-2 z-50 bg-background/80 backdrop-blur-sm rounded-md shadow-sm px-2 py-1 border border-border">
       <ul className="flex items-center gap-2 text-xs">
+        <li>
+          <Link
+            href="/games"
+            className={`${pathname === '/games' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
+          >
+            Games
+          </Link>
+        </li>
         {isDebugPage && (
           <li>
             <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -48,8 +56,8 @@ export function NavigationHeader() {
         )}
         {(showDebugLink || isDebugPage) && (
           <li>
-            <Link 
-              href="/debug" 
+            <Link
+              href="/debug"
               className={`${isDebugPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
             >
               Debug
