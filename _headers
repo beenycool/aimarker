@@ -2,15 +2,20 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-DNS-Prefetch-Control: on
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
 /_next/static/css/*
   Content-Type: text/css
+  Cache-Control: public, max-age=31536000, immutable
 
 /_next/static/chunks/*.js
   Content-Type: application/javascript
+  Cache-Control: public, max-age=31536000, immutable
 
 /_next/static/media/*
   Cache-Control: public, max-age=31536000, immutable
@@ -20,6 +25,26 @@
 
 /*.css
   Content-Type: text/css
+  Cache-Control: public, max-age=31536000, immutable
 
 /*.js
   Content-Type: application/javascript
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache audio files
+/sounds/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache images
+/public/*.{png,jpg,jpeg,gif,webp,svg,ico}
+  Cache-Control: public, max-age=31536000, immutable
+
+# Service Worker - no cache to allow updates
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# API routes - no cache
+/api/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0

@@ -1,141 +1,121 @@
-import { Skeleton } from "./ui/skeleton";
-import { Card, CardContent, CardHeader } from "./ui/card";
+import React from 'react';
 
-export function PlayerCardSkeleton() {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-32" />
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-6 w-12" />
-              <Skeleton className="h-8 w-8" />
-            </div>
-          </div>
-          <div className="flex gap-1">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="text-center">
-              <Skeleton className="h-4 w-8 mx-auto mb-1" />
-              <Skeleton className="h-6 w-8 mx-auto" />
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between mt-3 pt-3 border-t">
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-          <Skeleton className="h-4 w-8" />
-        </div>
-      </CardContent>
-    </Card>
-  );
+interface SkeletonProps {
+  className?: string;
+  children?: React.ReactNode;
 }
 
-export function TeamStatsSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-8 w-12" />
-          </CardContent>
-        </Card>
-      ))}
+const Skeleton: React.FC<SkeletonProps> = ({ className = '', children }) => (
+  <div
+    className={`animate-pulse bg-muted rounded-md ${className}`}
+    aria-hidden="true"
+    role="presentation"
+  >
+    {children}
+  </div>
+);
+
+export const HeaderSkeleton = () => (
+  <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="container flex h-14 items-center">
+      <Skeleton className="h-6 w-32" />
+      <div className="ml-auto flex items-center space-x-4">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-20" />
+      </div>
     </div>
-  );
-}
+  </div>
+);
 
-export function LeaderboardSkeleton() {
-  return (
-    <div className="space-y-3">
+export const FormSkeleton = () => (
+  <div className="space-y-6">
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-10 w-full" />
+    </div>
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+    <div className="flex space-x-2">
+      <Skeleton className="h-10 w-24" />
+      <Skeleton className="h-10 w-24" />
+    </div>
+  </div>
+);
+
+export const CardSkeleton = () => (
+  <div className="rounded-lg border bg-card p-6">
+    <div className="space-y-4">
+      <Skeleton className="h-6 w-3/4" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+      <div className="flex justify-between">
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-16" />
+      </div>
+    </div>
+  </div>
+);
+
+export const TableSkeleton = () => (
+  <div className="w-full">
+    <div className="border rounded-md">
+      <div className="border-b px-4 py-3">
+        <div className="flex space-x-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      </div>
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-6 h-6 rounded-full" />
-            <div>
-              <Skeleton className="h-4 w-24 mb-1" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-          </div>
-          <Skeleton className="h-6 w-8" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function MatchHistorySkeleton() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex justify-between items-center p-3 border rounded-lg">
-          <div>
-            <Skeleton className="h-4 w-32 mb-1" />
-            <Skeleton className="h-3 w-20" />
-          </div>
-          <div className="text-right">
-            <Skeleton className="h-6 w-12 mb-1" />
+        <div key={i} className="border-b px-4 py-3 last:border-b-0">
+          <div className="flex space-x-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-20" />
             <Skeleton className="h-4 w-16" />
           </div>
         </div>
       ))}
     </div>
-  );
-}
+  </div>
+);
 
-export function AiMarkerSkeleton() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <Skeleton className="h-10 w-64 mx-auto mb-4" />
-            <Skeleton className="h-6 w-96 mx-auto" />
-          </div>
-          
-          <Card className="mb-8">
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-32 w-full" />
-              <div className="flex gap-2">
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-24" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-24" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="p-4 border rounded-lg">
-                    <Skeleton className="h-4 w-48 mb-2" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+export const GamesSkeleton = () => (
+  <div className="container mx-auto px-4 py-8">
+    <div className="space-y-6">
+      <HeaderSkeleton />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </div>
+      <TableSkeleton />
+    </div>
+  </div>
+);
+
+export const MainPageSkeleton = () => (
+  <div className="min-h-screen bg-background">
+    <HeaderSkeleton />
+    <div className="container mx-auto px-4 py-8">
+      <div className="space-y-8">
+        <div className="text-center space-y-4">
+          <Skeleton className="h-12 w-96 mx-auto" />
+          <Skeleton className="h-6 w-64 mx-auto" />
+        </div>
+        <FormSkeleton />
+        <div className="grid gap-4 md:grid-cols-2">
+          <CardSkeleton />
+          <CardSkeleton />
         </div>
       </div>
     </div>
-  );
-}
+  </div>
+);
+
+export default Skeleton;
