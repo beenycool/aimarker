@@ -115,7 +115,7 @@ const main = async () => {
       passedSuites++;
       
       // Performance thresholds check
-      if (suite.thresholds.maxRenderTime && suiteDuration > suite.thresholds.maxRenderTime * 10) {
+      if (suite.thresholds.maxRenderTime && suiteDuration > suite.thresholds.maxRenderTime * MAX_RENDER_TIME_MULTIPLIER) {
         log(`   ⚠️  Test suite took longer than expected (${suiteDuration}ms)`, 'yellow');
       }
       
