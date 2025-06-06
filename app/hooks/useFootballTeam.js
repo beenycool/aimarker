@@ -59,25 +59,59 @@ export const useFootballTeam = () => {
         
         if (response.success && response.data.length > 0) {
           const apiTeam = response.data[0];
-          setCurrentTeamId(apiTeam.id);
+          setCurrentTeamId(apiTeam.id || apiTeam._id);
           setTeam({
             name: apiTeam.name,
-            players: apiTeam.players,
+            players: (apiTeam.players || []).map(player => ({
+              ...player,
+              id: player._id || player.id,
+              goals: player.goals || 0,
+              assists: player.assists || 0,
+              appearances: player.appearances || 0,
+              overall: player.overall || 50,
+              ...(player.position === 'GK' && { cleanSheets: player.cleanSheets || 0 })
+            })),
             matches: apiTeam.matches || []
           });
           
           // Sync to localStorage for offline use
           await footballAPI.syncToLocalStorage(apiTeam);
         } else {
-          // No teams found, try to migrate from localStorage
+          // No teams found, try to migrate from localStorage or create a new team
           const migrationResult = await footballAPI.migrateFromLocalStorage();
           if (migrationResult?.success) {
-            setCurrentTeamId(migrationResult.data.id);
+            setCurrentTeamId(migrationResult.data.id || migrationResult.data._id);
             setTeam({
               name: migrationResult.data.name,
-              players: migrationResult.data.players,
+              players: (migrationResult.data.players || []).map(player => ({
+                ...player,
+                id: player._id || player.id,
+                goals: player.goals || 0,
+                assists: player.assists || 0,
+                appearances: player.appearances || 0,
+                overall: player.overall || 50,
+                ...(player.position === 'GK' && { cleanSheets: player.cleanSheets || 0 })
+              })),
               matches: migrationResult.data.matches || []
             });
+          } else {
+            // Create a new empty team
+            const newTeamResult = await footballAPI.createTeam({
+              name: 'My Team',
+              formation: '4-4-2',
+              players: [],
+              description: 'New team',
+              isPublic: false
+            });
+            
+            if (newTeamResult.success) {
+              setCurrentTeamId(newTeamResult.data.id || newTeamResult.data._id);
+              setTeam({
+                name: newTeamResult.data.name,
+                players: [],
+                matches: []
+              });
+            }
           }
         }
       } else {
@@ -142,12 +176,22 @@ export const useFootballTeam = () => {
       if (isAuthenticated && isOnline && currentTeamId) {
         const response = await footballAPI.addPlayer(currentTeamId, playerData);
         if (response.success) {
+          const mappedPlayers = (response.data.players || []).map(player => ({
+            ...player,
+            id: player._id || player.id,
+            goals: player.goals || 0,
+            assists: player.assists || 0,
+            appearances: player.appearances || 0,
+            overall: player.overall || 50,
+            ...(player.position === 'GK' && { cleanSheets: player.cleanSheets || 0 })
+          }));
+          
           setTeam(prev => ({
             ...prev,
-            players: response.data.players
+            players: mappedPlayers
           }));
           await footballAPI.syncToLocalStorage(response.data);
-          return response.data.players[response.data.players.length - 1];
+          return mappedPlayers[mappedPlayers.length - 1];
         }
       } else {
         // Local addition
@@ -174,9 +218,19 @@ export const useFootballTeam = () => {
       if (isAuthenticated && isOnline && currentTeamId) {
         const response = await footballAPI.updatePlayer(currentTeamId, playerId, updates);
         if (response.success) {
+          const mappedPlayers = (response.data.players || []).map(player => ({
+            ...player,
+            id: player._id || player.id,
+            goals: player.goals || 0,
+            assists: player.assists || 0,
+            appearances: player.appearances || 0,
+            overall: player.overall || 50,
+            ...(player.position === 'GK' && { cleanSheets: player.cleanSheets || 0 })
+          }));
+          
           setTeam(prev => ({
             ...prev,
-            players: response.data.players
+            players: mappedPlayers
           }));
           await footballAPI.syncToLocalStorage(response.data);
           return;
@@ -203,9 +257,19 @@ export const useFootballTeam = () => {
       if (isAuthenticated && isOnline && currentTeamId) {
         const response = await footballAPI.removePlayer(currentTeamId, playerId);
         if (response.success) {
+          const mappedPlayers = (response.data.players || []).map(player => ({
+            ...player,
+            id: player._id || player.id,
+            goals: player.goals || 0,
+            assists: player.assists || 0,
+            appearances: player.appearances || 0,
+            overall: player.overall || 50,
+            ...(player.position === 'GK' && { cleanSheets: player.cleanSheets || 0 })
+          }));
+          
           setTeam(prev => ({
             ...prev,
-            players: response.data.players
+            players: mappedPlayers
           }));
           await footballAPI.syncToLocalStorage(response.data);
           return;

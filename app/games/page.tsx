@@ -173,11 +173,7 @@ export default function GamesPage() {
         dribbling: newPlayer.dribbling || 50,
         defending: newPlayer.defending || 50,
         physical: newPlayer.physical || 50,
-        overall: calculateOverallRating(newPlayer),
-        goals: 0,
-        assists: 0,
-        appearances: 0,
-        ...(newPlayer.position === 'GK' && { cleanSheets: 0 })
+        overall: calculateOverallRating(newPlayer)
       };
 
       await addPlayerToTeam(player);
@@ -373,7 +369,7 @@ export default function GamesPage() {
         averageRating: 0,
         goalsPerGame: 0,
         assistsPerGame: 0,
-        totalGoalContributions: player.goals + player.assists,
+        totalGoalContributions: (player.goals || 0) + (player.assists || 0),
         bestRating: 0,
         worstRating: 0,
         cleanSheetsPercentage: 0,
@@ -400,7 +396,7 @@ export default function GamesPage() {
       averageRating: ratings.reduce((sum, r) => sum + r, 0) / ratings.length,
       goalsPerGame: totalGoalsInMatches / totalMatches,
       assistsPerGame: totalAssistsInMatches / totalMatches,
-      totalGoalContributions: player.goals + player.assists,
+      totalGoalContributions: (player.goals || 0) + (player.assists || 0),
       bestRating: Math.max(...ratings),
       worstRating: Math.min(...ratings),
       cleanSheetsPercentage: player.position === 'GK' ? (cleanSheets / totalMatches) * 100 : 0,
@@ -489,11 +485,11 @@ export default function GamesPage() {
   };
 
   const topScorers = [...team.players]
-    .sort((a, b) => b.goals - a.goals)
+    .sort((a, b) => (b.goals || 0) - (a.goals || 0))
     .slice(0, 5);
 
   const topRated = [...team.players]
-    .sort((a, b) => b.overallRating - a.overallRating)
+    .sort((a, b) => (b.overall || b.overallRating || 0) - (a.overall || a.overallRating || 0))
     .slice(0, 5);
 
   if (isLoading) {
@@ -720,8 +716,8 @@ export default function GamesPage() {
                         <Badge className={`${getPositionColor(player.position)} text-white text-xs`}>
                           {player.position}
                         </Badge>
-                        <span className={`text-2xl font-bold ${getRatingColor(player.overallRating)}`}>
-                          {player.overallRating}
+                        <span className={`text-2xl font-bold ${getRatingColor(player.overall || player.overallRating || 0)}`}>
+                          {player.overall || player.overallRating || 0}
                         </span>
                       </div>
                     </div>
@@ -782,9 +778,9 @@ export default function GamesPage() {
                   </div>
                   
                   <div className="flex justify-between mt-3 pt-3 border-t text-sm text-muted-foreground">
-                    <span>⚽ {player.goals}</span>
-                    <span>🎯 {player.assists}</span>
-                    <span>📊 {player.appearances}</span>
+                    <span>⚽ {player.goals || 0}</span>
+                    <span>🎯 {player.assists || 0}</span>
+                    <span>📊 {player.appearances || 0}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -1158,7 +1154,7 @@ export default function GamesPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {team.players.reduce((sum, player) => sum + player.goals, 0)}
+                  {team.players.reduce((sum, player) => sum + (player.goals || 0), 0)}
                 </div>
               </CardContent>
             </Card>
@@ -1170,7 +1166,7 @@ export default function GamesPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {team.players.reduce((sum, player) => sum + player.assists, 0)}
+                  {team.players.reduce((sum, player) => sum + (player.assists || 0), 0)}
                 </div>
               </CardContent>
             </Card>
@@ -1183,7 +1179,7 @@ export default function GamesPage() {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {team.players.length > 0 
-                    ? Math.round(team.players.reduce((sum, player) => sum + player.overallRating, 0) / team.players.length)
+                    ? Math.round(team.players.reduce((sum, player) => sum + (player.overall || player.overallRating || 0), 0) / team.players.length)
                     : 0
                   }
                 </div>
@@ -1218,7 +1214,7 @@ export default function GamesPage() {
                             <div className="text-sm text-muted-foreground">{player.position}</div>
                           </div>
                         </div>
-                        <div className="text-lg font-bold">{player.goals}</div>
+                        <div className="text-lg font-bold">{player.goals || 0}</div>
                       </div>
                     ))}
                   </div>
@@ -1249,8 +1245,8 @@ export default function GamesPage() {
                             <div className="text-sm text-muted-foreground">{player.position}</div>
                           </div>
                         </div>
-                        <div className={`text-lg font-bold ${getRatingColor(player.overallRating)}`}>
-                          {player.overallRating}
+                        <div className={`text-lg font-bold ${getRatingColor(player.overall || player.overallRating || 0)}`}>
+                          {player.overall || player.overallRating || 0}
                         </div>
                       </div>
                     ))}
@@ -1294,18 +1290,18 @@ export default function GamesPage() {
                     </div>
                     <div className="text-center">
                       <div className="text-sm text-muted-foreground">Overall Rating</div>
-                      <div className={`text-2xl font-bold ${getRatingColor(selectedPlayer.overallRating)}`}>
-                        {selectedPlayer.overallRating}
+                      <div className={`text-2xl font-bold ${getRatingColor(selectedPlayer.overall || selectedPlayer.overallRating || 0)}`}>
+                        {selectedPlayer.overall || selectedPlayer.overallRating || 0}
                       </div>
                     </div>
                     <div className="text-center">
                       <div className="text-sm text-muted-foreground">Appearances</div>
-                      <div className="text-xl font-semibold">{selectedPlayer.appearances}</div>
+                      <div className="text-xl font-semibold">{selectedPlayer.appearances || 0}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-sm text-muted-foreground">Goal Contributions</div>
                       <div className="text-xl font-semibold text-green-600">
-                        {selectedPlayer.goals + selectedPlayer.assists}
+                        {(selectedPlayer.goals || 0) + (selectedPlayer.assists || 0)}
                       </div>
                     </div>
                   </div>
@@ -1347,17 +1343,17 @@ export default function GamesPage() {
                     <div className="text-center p-3 bg-muted rounded-lg">
                       <div className="text-2xl mb-1">⚽</div>
                       <div className="text-sm text-muted-foreground">Goals</div>
-                      <div className="text-2xl font-bold text-green-600">{selectedPlayer.goals}</div>
+                      <div className="text-2xl font-bold text-green-600">{selectedPlayer.goals || 0}</div>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg">
                       <div className="text-2xl mb-1">🎯</div>
                       <div className="text-sm text-muted-foreground">Assists</div>
-                      <div className="text-2xl font-bold text-blue-600">{selectedPlayer.assists}</div>
+                      <div className="text-2xl font-bold text-blue-600">{selectedPlayer.assists || 0}</div>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg">
                       <div className="text-2xl mb-1">📊</div>
                       <div className="text-sm text-muted-foreground">Appearances</div>
-                      <div className="text-2xl font-bold">{selectedPlayer.appearances}</div>
+                      <div className="text-2xl font-bold">{selectedPlayer.appearances || 0}</div>
                     </div>
                     {selectedPlayer.position === 'GK' && selectedPlayer.cleanSheets !== undefined && (
                       <div className="text-center p-3 bg-muted rounded-lg">
