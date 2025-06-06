@@ -8,7 +8,7 @@ module.exports = {
   setupFilesAfterEnv: [
     '<rootDir>/jest.setup.js'
   ],
-  moduleNameMapping: pathsToModuleNameMapper(compilerOptions.paths || {}, {
+  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths || {}, {
     prefix: '<rootDir>/'
   }),
   transform: {
