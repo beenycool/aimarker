@@ -69,6 +69,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="preconnect" href="https://api.aimarker.tech" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://api.aimarker.tech" />
+        <link rel="preload" href="/sounds/notify.mp3" as="audio" type="audio/mpeg" />
+        <link rel="preload" href="/sounds/game-end.mp3" as="audio" type="audio/mpeg" />
+        <meta httpEquiv="x-dns-prefetch-control" content="on" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: dark)" />
       </head>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <ThemeProvider
