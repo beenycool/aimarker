@@ -23,15 +23,7 @@
     "test:performance": "jest --config=jest.games.config.js --testPathPattern=page.performance.test.tsx",
     "test:datafetch": "jest --config=jest.games.config.js --testPathPattern=page.datafetch.test.tsx",
     "test:caching": "jest --config=jest.games.config.js --testPathPattern=page.caching.test.tsx",
-    "test:regression": "jest --config=jest.games.config.js --testPathPattern=page.regression.test.tsx",
-    "git:status": "git status",
-    "git:add": "git add .",
-    "git:commit": "git commit -m",
-    "git:push": "git push origin",
-    "git:pull": "git pull origin main",
-    "git:branch": "git checkout -b",
-    "pr:prepare": "npm run test && npm run build",
-    "pr:check": "npm run test:coverage && npm run build:analyze"
+    "test:regression": "jest --config=jest.games.config.js --testPathPattern=page.regression.test.tsx"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.10",
@@ -96,8 +88,6 @@
     "jest-environment-jsdom": "^30.0.0-beta.3",
     "lighthouse": "^11.4.0",
     "ts-jest": "^29.1.1",
-    "webpack-bundle-analyzer": "^4.9.0",
-    "husky": "^8.0.3",
-    "lint-staged": "^15.2.0"
+    "webpack-bundle-analyzer": "^4.9.0"
   }
 }

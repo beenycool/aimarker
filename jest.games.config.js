@@ -8,9 +8,15 @@ module.exports = {
   setupFilesAfterEnv: [
     '<rootDir>/jest.setup.js'
   ],
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths || {}, {
-    prefix: '<rootDir>/'
-  }),
+  moduleNameMapper: {
+    // TypeScript path mapping
+    ...pathsToModuleNameMapper(compilerOptions.paths || {}, {
+      prefix: '<rootDir>/'
+    }),
+    // Additional module mappings
+    '^@/(.*)$': '<rootDir>/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
+  },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: {
@@ -48,12 +54,5 @@ module.exports = {
     'ts-jest': {
       isolatedModules: true
     }
-  },
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
-  },
-  setupFiles: [
-    '<rootDir>/jest.polyfills.js'
-  ]
+  }
 };
