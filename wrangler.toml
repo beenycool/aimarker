@@ -3,4 +3,13 @@ compatibility_date = "2024-12-01"
 pages_build_output_dir = "out"
 
 [env.production]
-route = "aimarker.tech/*"
+routes = [
+  { pattern = "aimarker.tech/*", zone_name = "aimarker.tech" }
+]
+
+[[env.production.services]]
+binding = "API_SERVICE"
+service = "api-aimarker-tech"
+
+[build]
+command = "npm run build"

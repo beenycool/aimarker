@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build-export": "npm run build",
+    "build-export": "next build",
     "start": "next start",
     "serve": "npx serve out",
     "build-local": "node scripts/build-local.js",

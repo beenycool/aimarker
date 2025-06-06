@@ -2,18 +2,29 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
 
 // Load environment variables
 dotenv.config();
 
 // Import routes and middleware
 const apiRoutes = require('./routes/api');
+
+// MongoDB connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/beenycool';
+
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // Initialize Express app
 const app = express();
@@ -36,18 +47,7 @@ app.use(cors({
 app.use(express.json({ limit: '5mb' })); // Increased limit for screen captures
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev')); // Log HTTP requests
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      connectSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      fontSrc: ["'self'", "data:"],
-    },
-  },
-}));
+app.use(helmet());
 
 // Rate limiting - More restrictive limits
 const apiLimiter = rateLimit({
@@ -67,109 +67,22 @@ app.use('/api', apiLimiter);
 // Use API routes
 app.use('/api', apiRoutes);
 
-// Determine the Next.js build directory
-let nextBuildDir = path.join(__dirname, '../../../.next');
-
-// Check if we're on Render
-if (process.env.RENDER) {
-  // Try different paths that might work on Render
-  const possiblePaths = [
-    path.join(__dirname, '../../../.next'),
-    path.join(__dirname, '../../.next'),
-    path.join(process.cwd(), '.next'),
-    '/opt/render/project/src/.next'
-  ];
-  
-  // Use the first path that exists
-  for (const testPath of possiblePaths) {
-    if (fs.existsSync(testPath)) {
-      nextBuildDir = testPath;
-      console.log(`Found Next.js build directory at: ${nextBuildDir}`);
-      break;
-    }
-  }
-}
-
-// Serve Next.js static files
-if (fs.existsSync(nextBuildDir)) {
-  console.log('Serving Next.js static files from:', nextBuildDir);
-  app.use('/_next', express.static(path.join(nextBuildDir, '_next')));
-} else {
-  console.warn(`Next.js build directory not found at ${nextBuildDir}`);
-}
-
-// Serve static files from public directory
-let publicDir = path.join(__dirname, '../../../public');
-// Check if we're on Render
-if (process.env.RENDER) {
-  // Try different paths that might work on Render
-  const possiblePaths = [
-    path.join(__dirname, '../../../public'),
-    path.join(__dirname, '../../public'),
-    path.join(process.cwd(), 'public'),
-    '/opt/render/project/src/public'
-  ];
-  
-  // Use the first path that exists
-  for (const testPath of possiblePaths) {
-    if (fs.existsSync(testPath)) {
-      publicDir = testPath;
-      console.log(`Found public directory at: ${publicDir}`);
-      break;
-    }
-  }
-}
-
-// Serve static files
-app.use(express.static(publicDir));
-
-// Health check endpoint for Render
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    port: process.env.PORT || 3000,
-    // database: sequelize.authenticate().then(() => 'connected').catch(() => 'disconnected')
+    port: process.env.PORT || 3000
   });
 });
 
-// Catch-all route to serve Next.js pages
-app.get('*', (req, res) => {
-  // Check if this is an API request that wasn't handled
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ 
-      success: false, 
-      message: 'API endpoint not found' 
-    });
-  }
-
-  // For all other requests, serve the Next.js app
-  const indexPath = path.join(publicDir, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.send(`
-      <html>
-        <head>
-          <title>Beenycool Server</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-            h1 { color: #333; }
-            .card { background: #f9f9f9; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-          </style>
-        </head>
-        <body>
-          <h1>Beenycool Server</h1>
-          <div class="card">
-            <p>Server is running. The frontend application is not yet built.</p>
-            <p>To build the frontend, run: <code>npm run build</code></p>
-          </div>
-        </body>
-      </html>
-    `);
-  }
+// 404 handler for unmatched routes
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Endpoint not found' 
+  });
 });
 
 // Error handling middleware
@@ -185,19 +98,11 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 3000;
 
-// Log the port we're trying to use
-console.log(`Attempting to start server on port ${PORT}`);
+console.log(`Starting API server on port ${PORT}`);
 
-// Start the server and handle any errors
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running and listening on port ${PORT}`);
-  console.log(`Server is accessible at http://localhost:${PORT}`);
-  
-  // If we're on Render, log additional information
-  if (process.env.RENDER) {
-    console.log(`Running on Render with NODE_ENV: ${process.env.NODE_ENV}`);
-    console.log(`DATABASE_URL present: ${!!process.env.DATABASE_URL}`);
-  }
+  console.log(`API server running on port ${PORT}`);
+  console.log(`API endpoints accessible at http://localhost:${PORT}/api`);
 });
 
 // Handle server errors
@@ -212,13 +117,9 @@ server.on('error', (error) => {
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down...');
+  console.log('SIGTERM received, shutting down API server...');
   server.close(() => {
-    console.log('Server closed');
-    // sequelize.close().then(() => {
-    //   console.log('Database connection closed');
-    //   process.exit(0);
-    // });
+    console.log('API server closed');
     process.exit(0);
   });
 });

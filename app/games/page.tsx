@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useFootballTeam } from '../hooks/useFootballTeam';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,11 +55,18 @@ const getRatingColor = (rating: number) => {
 };
 
 export default function GamesPage() {
-  const [team, setTeam] = useState<Team>({
-    name: '',
-    players: [],
-    matches: []
-  });
+  const {
+    team,
+    isLoading,
+    error,
+    isOnline,
+    isAuthenticated,
+    addPlayer: addPlayerToTeam,
+    updatePlayer: updatePlayerInTeam,
+    removePlayer: removePlayerFromTeam,
+    saveTeamData,
+    clearTeamData: clearAllTeamData
+  } = useFootballTeam();
 
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
   const [isAddMatchOpen, setIsAddMatchOpen] = useState(false);
@@ -103,18 +111,6 @@ export default function GamesPage() {
     date: new Date().toISOString().split('T')[0]
   });
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const savedTeam = localStorage.getItem('footballTeam');
-    if (savedTeam) {
-      setTeam(JSON.parse(savedTeam));
-    }
-  }, []);
-
-  // Save data to localStorage whenever team changes
-  useEffect(() => {
-    localStorage.setItem('footballTeam', JSON.stringify(team));
-  }, [team]);
 
   const calculateOverallRating = (player: Partial<Player>) => {
     const { pace = 50, shooting = 50, passing = 50, dribbling = 50, defending = 50, physical = 50, position = 'ST' } = player;
@@ -164,42 +160,42 @@ export default function GamesPage() {
     return Math.min(99, Math.max(40, overall));
   };
 
-  const handleAddPlayer = () => {
+  const handleAddPlayer = async () => {
     if (!newPlayer.name) return;
 
-    const player: Player = {
-      id: Date.now().toString(),
-      name: newPlayer.name,
-      position: newPlayer.position as Player['position'],
-      pace: newPlayer.pace || 50,
-      shooting: newPlayer.shooting || 50,
-      passing: newPlayer.passing || 50,
-      dribbling: newPlayer.dribbling || 50,
-      defending: newPlayer.defending || 50,
-      physical: newPlayer.physical || 50,
-      overallRating: calculateOverallRating(newPlayer),
-      goals: 0,
-      assists: 0,
-      appearances: 0,
-      ...(newPlayer.position === 'GK' && { cleanSheets: 0 })
-    };
+    try {
+      const player = {
+        name: newPlayer.name,
+        position: newPlayer.position as Player['position'],
+        pace: newPlayer.pace || 50,
+        shooting: newPlayer.shooting || 50,
+        passing: newPlayer.passing || 50,
+        dribbling: newPlayer.dribbling || 50,
+        defending: newPlayer.defending || 50,
+        physical: newPlayer.physical || 50,
+        overall: calculateOverallRating(newPlayer),
+        goals: 0,
+        assists: 0,
+        appearances: 0,
+        ...(newPlayer.position === 'GK' && { cleanSheets: 0 })
+      };
 
-    setTeam(prev => ({
-      ...prev,
-      players: [...prev.players, player]
-    }));
+      await addPlayerToTeam(player);
 
-    setNewPlayer({
-      name: '',
-      position: 'ST',
-      pace: 50,
-      shooting: 50,
-      passing: 50,
-      dribbling: 50,
-      defending: 50,
-      physical: 50
-    });
-    setIsAddPlayerOpen(false);
+      setNewPlayer({
+        name: '',
+        position: 'ST',
+        pace: 50,
+        shooting: 50,
+        passing: 50,
+        dribbling: 50,
+        defending: 50,
+        physical: 50
+      });
+      setIsAddPlayerOpen(false);
+    } catch (error) {
+      console.error('Failed to add player:', error);
+    }
   };
 
   const handleEditPlayer = (player: Player) => {
@@ -217,46 +213,47 @@ export default function GamesPage() {
     setIsAddPlayerOpen(true);
   };
 
-  const handleUpdatePlayer = () => {
+  const handleUpdatePlayer = async () => {
     if (!editingPlayer || !newPlayer.name) return;
 
-    const updatedPlayer: Player = {
-      ...editingPlayer,
-      name: newPlayer.name,
-      position: newPlayer.position as Player['position'],
-      pace: newPlayer.pace || 50,
-      shooting: newPlayer.shooting || 50,
-      passing: newPlayer.passing || 50,
-      dribbling: newPlayer.dribbling || 50,
-      defending: newPlayer.defending || 50,
-      physical: newPlayer.physical || 50,
-      overallRating: calculateOverallRating(newPlayer)
-    };
+    try {
+      const updates = {
+        name: newPlayer.name,
+        position: newPlayer.position as Player['position'],
+        pace: newPlayer.pace || 50,
+        shooting: newPlayer.shooting || 50,
+        passing: newPlayer.passing || 50,
+        dribbling: newPlayer.dribbling || 50,
+        defending: newPlayer.defending || 50,
+        physical: newPlayer.physical || 50,
+        overall: calculateOverallRating(newPlayer)
+      };
 
-    setTeam(prev => ({
-      ...prev,
-      players: prev.players.map(p => p.id === editingPlayer.id ? updatedPlayer : p)
-    }));
+      await updatePlayerInTeam(editingPlayer.id, updates);
 
-    setEditingPlayer(null);
-    setNewPlayer({
-      name: '',
-      position: 'ST',
-      pace: 50,
-      shooting: 50,
-      passing: 50,
-      dribbling: 50,
-      defending: 50,
-      physical: 50
-    });
-    setIsAddPlayerOpen(false);
+      setEditingPlayer(null);
+      setNewPlayer({
+        name: '',
+        position: 'ST',
+        pace: 50,
+        shooting: 50,
+        passing: 50,
+        dribbling: 50,
+        defending: 50,
+        physical: 50
+      });
+      setIsAddPlayerOpen(false);
+    } catch (error) {
+      console.error('Failed to update player:', error);
+    }
   };
 
-  const handleDeletePlayer = (playerId: string) => {
-    setTeam(prev => ({
-      ...prev,
-      players: prev.players.filter(p => p.id !== playerId)
-    }));
+  const handleDeletePlayer = async (playerId: string) => {
+    try {
+      await removePlayerFromTeam(playerId);
+    } catch (error) {
+      console.error('Failed to delete player:', error);
+    }
   };
 
   const handleLoadSampleData = () => {
@@ -270,63 +267,86 @@ export default function GamesPage() {
     }
   };
 
-  const handleClearAllData = () => {
-    clearAllData();
-    setTeam({
-      name: '',
-      players: [],
-      matches: []
-    });
+  const handleClearAllData = async () => {
+    try {
+      clearAllData();
+      await clearAllTeamData();
+    } catch (error) {
+      console.error('Failed to clear team data:', error);
+    }
   };
 
-  const handleImportTeam = (importedTeam: Team) => {
-    setTeam(importedTeam);
-    localStorage.setItem('footballTeam', JSON.stringify(importedTeam));
+  const handleImportTeam = async (importedTeam: Team) => {
+    try {
+      await saveTeamData(importedTeam);
+    } catch (error) {
+      console.error('Failed to import team:', error);
+    }
   };
 
-  const handleTeamUpdate = (updatedTeam: Team) => {
-    setTeam(updatedTeam);
-    localStorage.setItem('footballTeam', JSON.stringify(updatedTeam));
+  const handleTeamUpdate = async (updatedTeam: Team) => {
+    try {
+      await saveTeamData(updatedTeam);
+    } catch (error) {
+      console.error('Failed to update team:', error);
+    }
   };
 
-  const handleQuickCreatePlayer = (player: Player) => {
-    setTeam(prev => ({
-      ...prev,
-      players: [...prev.players, player]
-    }));
+  const handleQuickCreatePlayer = async (player: Player) => {
+    try {
+      await addPlayerToTeam(player);
+    } catch (error) {
+      console.error('Failed to create player:', error);
+    }
   };
 
-  const handleQuickCreateMultiple = (players: Player[]) => {
-    setTeam(prev => ({
-      ...prev,
-      players: [...prev.players, ...players]
-    }));
-  };
-
-  const handleManualMatchEntry = (match: Match) => {
-    // Update player stats based on the match
-    const updatedPlayers = team.players.map(player => {
-      const playerStat = match.playerStats.find(ps => ps.playerId === player.id);
-      if (playerStat) {
-        return {
-          ...player,
-          goals: player.goals + playerStat.goals,
-          assists: player.assists + playerStat.assists,
-          appearances: player.appearances + 1
-        };
+  const handleQuickCreateMultiple = async (players: Player[]) => {
+    try {
+      for (const player of players) {
+        await addPlayerToTeam(player);
       }
-      return { ...player, appearances: player.appearances + 1 };
-    });
+    } catch (error) {
+      console.error('Failed to create multiple players:', error);
+    }
+  };
 
-    // Add match to team history
-    const updatedTeam = {
-      ...team,
-      players: updatedPlayers,
-      matches: [...team.matches, match]
-    };
+  const handleManualMatchEntry = async (match: Match) => {
+    try {
+      // Update player stats based on the match
+      const playerUpdates = team.players.map(player => {
+        const playerStat = match.playerStats.find(ps => ps.playerId === player.id);
+        if (playerStat) {
+          return {
+            id: player.id,
+            updates: {
+              goals: player.goals + playerStat.goals,
+              assists: player.assists + playerStat.assists,
+              appearances: player.appearances + 1
+            }
+          };
+        }
+        return {
+          id: player.id,
+          updates: {
+            appearances: player.appearances + 1
+          }
+        };
+      });
 
-    setTeam(updatedTeam);
-    localStorage.setItem('footballTeam', JSON.stringify(updatedTeam));
+      // Update all players
+      for (const { id, updates } of playerUpdates) {
+        await updatePlayerInTeam(id, updates);
+      }
+
+      // Add match to team history - this might need a separate API endpoint
+      const updatedTeam = {
+        ...team,
+        matches: [...team.matches, match]
+      };
+      await saveTeamData(updatedTeam);
+    } catch (error) {
+      console.error('Failed to process match entry:', error);
+    }
   };
 
   const handleViewPlayerStats = (player: Player) => {
@@ -412,18 +432,30 @@ export default function GamesPage() {
       setSimulationResult(result);
       
       // Update player stats in team
-      const updatedPlayers = team.players.map(player => {
+      const playerUpdates = team.players.map(player => {
         const playerStat = result.playerStats.find(ps => ps.playerId === player.id);
         if (playerStat) {
           return {
-            ...player,
-            goals: player.goals + playerStat.goals,
-            assists: player.assists + playerStat.assists,
-            appearances: player.appearances + 1
+            id: player.id,
+            updates: {
+              goals: player.goals + playerStat.goals,
+              assists: player.assists + playerStat.assists,
+              appearances: player.appearances + 1
+            }
           };
         }
-        return { ...player, appearances: player.appearances + 1 };
+        return {
+          id: player.id,
+          updates: {
+            appearances: player.appearances + 1
+          }
+        };
       });
+
+      // Update all players
+      for (const { id, updates } of playerUpdates) {
+        await updatePlayerInTeam(id, updates);
+      }
       
       // Create match record
       const newMatch: Match = {
@@ -442,11 +474,12 @@ export default function GamesPage() {
         }))
       };
       
-      setTeam(prev => ({
-        ...prev,
-        players: updatedPlayers,
-        matches: [...prev.matches, newMatch]
-      }));
+      // Add match to team history
+      const updatedTeam = {
+        ...team,
+        matches: [...team.matches, newMatch]
+      };
+      await saveTeamData(updatedTeam);
       
     } catch (error) {
       console.error('Simulation error:', error);
@@ -463,14 +496,46 @@ export default function GamesPage() {
     .sort((a, b) => b.overallRating - a.overallRating)
     .slice(0, 5);
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading your team...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600">Error: {error}</p>
+        </div>
+      )}
+      
+      {!isOnline && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-600">You're offline. Changes will sync when you reconnect.</p>
+        </div>
+      )}
+      
+      {!isAuthenticated && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-600">Sign in to sync your team across devices.</p>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-center mb-2 flex items-center justify-center gap-2">
           <Trophy className="text-yellow-500" />
-          {team.name}
+          {team.name || 'My Team'}
         </h1>
         <p className="text-center text-muted-foreground">FIFA-Style Football Management System</p>
+        {isAuthenticated && (
+          <p className="text-center text-sm text-green-600 mt-1">✓ Synced to cloud</p>
+        )}
       </div>
 
       <Tabs defaultValue="squad" className="w-full">

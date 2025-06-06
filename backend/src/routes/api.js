@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
 const authController = require('../controllers/authController');
+const footballController = require('../controllers/footballController');
 // const guildController = require('../controllers/guildController'); // Commented out
 // const adminController = require('../controllers/adminController'); // Commented out
 // const { authenticateToken, isAdmin } = require('../middleware/auth'); // isAdmin removed
@@ -118,6 +119,20 @@ router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
 router.post('/auth/logout', authenticateToken, authController.logout);
 router.get('/auth/user', authenticateToken, authController.getCurrentUser);
+
+// Football routes
+// Team management
+router.post('/football/teams', authenticateToken, footballController.createTeam);
+router.get('/football/teams', authenticateToken, footballController.getUserTeams);
+router.get('/football/teams/public', footballController.getPublicTeams);
+router.get('/football/teams/:id', authenticateToken, footballController.getTeamById);
+router.put('/football/teams/:id', authenticateToken, footballController.updateTeam);
+router.delete('/football/teams/:id', authenticateToken, footballController.deleteTeam);
+
+// Player management
+router.post('/football/teams/:teamId/players', authenticateToken, footballController.addPlayer);
+router.put('/football/teams/:teamId/players/:playerId', authenticateToken, footballController.updatePlayer);
+router.delete('/football/teams/:teamId/players/:playerId', authenticateToken, footballController.removePlayer);
 
 // Guild routes - Commented out as Guild model and controller are removed/being removed
 // router.post('/guilds', authenticateToken, guildController.createGuild);
