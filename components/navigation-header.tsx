@@ -35,25 +35,30 @@ export function NavigationHeader() {
   
   // If we're already on the debug page, always show the home link
   const isDebugPage = pathname === '/debug';
+  const isHomePage = pathname === '/';
+  const isGamesPage = pathname === '/games';
   
   return (
     <nav className="fixed top-2 right-2 z-50 bg-background/80 backdrop-blur-sm rounded-md shadow-sm px-2 py-1 border border-border">
       <ul className="flex items-center gap-2 text-xs">
-        <li>
-          <Link
-            href="/games"
-            className={`${pathname === '/games' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
-          >
-            Games
-          </Link>
-        </li>
-        {isDebugPage && (
+        {!isHomePage && (
           <li>
-            <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-              Home
+            <Link
+              href="/"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              AI Marker
             </Link>
           </li>
         )}
+        <li>
+          <Link
+            href="/games"
+            className={`${isGamesPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
+          >
+            Football Tracker
+          </Link>
+        </li>
         {(showDebugLink || isDebugPage) && (
           <li>
             <Link

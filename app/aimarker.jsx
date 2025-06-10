@@ -3142,11 +3142,35 @@ Please respond to their question clearly and constructively. Keep your answer co
     }
   };
 
-      // Add a function to create a middleware API endpoint in Next.js    const createMiddlewareApiEndpoint = async () => {        try {            // Check if we're running in a browser environment            if (typeof window === 'undefined') return false;                        // Check if we're in static export mode            const isStaticExport = process.env.IS_STATIC_EXPORT === 'true';                        if (isStaticExport) {                console.log('Running in static export mode - API calls redirected to backend');        console.log(`Using API base URL: ${getAPI_BASE_URL()}`);        return true;            }                        try {        // Only try to use local API in development mode        const response = await fetch('/api/create-middleware', {                  method: 'POST',                  headers: {                      'Content-Type': 'application/json',                  },                  body: JSON.stringify({                      type: 'api_middleware',                      endpoints: ['auth/events', 'github/completions', 'chat/completions']                  }),                  cache: 'no-store'              });                            if (response.ok) {                  console.log('Successfully created middleware API endpoints');                  return true;              }      } catch (localApiError) {        console.warn('Local API middleware creation failed, falling back to remote API:', localApiError.message);                // If local API fails, try to check if the remote API is available        try {          const healthCheckUrl = constructApiUrl('health');          const healthCheck = await fetch(healthCheckUrl, {             method: 'GET',            headers: { 'Content-Type': 'application/json' },            cache: 'no-store'          });                    if (healthCheck.ok) {            console.log('Remote API is available, will use it instead of local API');            return true;          }        } catch (remoteApiError) {          console.error('Remote API health check failed:', remoteApiError.message);        }      }            return false;        } catch (error) {            console.error('Failed to create middleware API endpoint:', error);            // In static export, we want to gracefully handle this error            if (process.env.IS_STATIC_EXPORT === 'true') {                console.log('Running in static export mode - ignoring API middleware creation failure');                return true;            }            return false;        }    };
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <TopBar version="2.1.3" backendStatus={backendStatus} requestLimits={remainingRequestTokens} />
+      
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            AI GCSE Marker
+          </h1>
+          <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Get instant, detailed feedback on your GCSE answers with AI-powered marking. 
+            Supports all major subjects and exam boards.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">
+              All GCSE Subjects
+            </Badge>
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+              Instant Feedback
+            </Badge>
+            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800">
+              Grade 1-9 Scale
+            </Badge>
+            <Badge variant="outline" className="bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800">
+              Free to Use
+            </Badge>
+          </div>
+        </div>
       
       {/* ADDED: OCR Preview Dialog (Sheet was mentioned, but Dialog is simpler here) */}
       <Dialog open={showOcrPreviewDialog} onOpenChange={(open) => {
@@ -3200,8 +3224,8 @@ Please respond to their question clearly and constructively. Keep your answer co
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
         {showGuide && <QuickGuide onClose={() => setShowGuide(false)} />}
         
         {/* Backend alerts */}
@@ -4418,10 +4442,9 @@ Please respond to their question clearly and constructively. Keep your answer co
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
-}
+};
 
 export default AIMarker;
-
-

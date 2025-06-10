@@ -29,7 +29,10 @@ export default function Document() {
                     : DEFAULT_BACKEND_URL;
                 };
                 
-                // Removed GitHub Pages detection - now using DigitalOcean
+                // Define isGitHubPages function
+                window.API_HELPERS.isGitHubPages = window.isGitHubPages = function() {
+                  return false; // Now using DigitalOcean instead of GitHub Pages
+                };
                 
                 window.API_HELPERS.constructApiUrl = window.constructApiUrl = function(endpoint) {
                   const apiBaseUrl = window.getApiBaseUrl();
