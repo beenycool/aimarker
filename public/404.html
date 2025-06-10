@@ -10,7 +10,7 @@
       if (l.search[1] === '/' ) {
         var decoded = sessionStorage.redirect.split('?')[1];
         if (decoded) {
-          l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + 
                    decoded + (l.hash || ''));
         }
       }
@@ -24,7 +24,7 @@
     if (path === '/games') {
       window.location.replace(origin + '/games/');
     }
-    // If accessing /aimarker without trailing slash, redirect to /aimarker/
+    // If accessing /aimarker without trailing slash, redirect to /aimarker/  
     else if (path === '/aimarker') {
       window.location.replace(origin + '/aimarker/');
     }
