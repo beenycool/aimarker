@@ -1,7 +1,8 @@
 "use client";
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// AnimatePresence temporarily removed due to import issue
+// import { motion, AnimatePresence } from 'framer-motion';
 import 'katex/dist/katex.min.css';
 import { getSubjectGuidance } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -484,11 +485,7 @@ const AIMarker = () => {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <TopBar version="2.2.0" backendStatus={backendStatus} />
-      {isClient && (
-        <AnimatePresence>
-          {showGuide && <QuickGuide onClose={() => setShowGuide(false)} />}
-        </AnimatePresence>
-      )}
+      {isClient && showGuide && <QuickGuide onClose={() => setShowGuide(false)} />}
       <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
         <BackendStatusChecker onStatusChange={handleBackendStatusChange} getAPI_BASE_URL={getApiBaseUrl} />
         <EnhancedAlert error={error} success={success} onRetry={handleSubmitForMarking} />
@@ -627,7 +624,7 @@ const AIMarker = () => {
                             <SelectValue placeholder="Select subject" />
                           </SelectTrigger>
                           <SelectContent>
-                            {allSubjects.map((subj) => (
+                            {(allSubjects || []).map((subj) => (
                               <SelectItem key={subj.value} value={subj.value}>
                                 {subj.label}
                               </SelectItem>
@@ -741,7 +738,7 @@ const AIMarker = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="general">General</SelectItem>
-                          {QUESTION_TYPES[subject]?.[examBoard]?.map((type) => (
+                          {(QUESTION_TYPES[subject]?.[examBoard] || []).map((type) => (
                             <SelectItem key={type.value} value={type.value}>
                               {type.label}
                             </SelectItem>

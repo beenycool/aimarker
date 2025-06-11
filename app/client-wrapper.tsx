@@ -5,12 +5,9 @@ import React, { Suspense } from 'react';
 import usePerformanceMonitoring from './hooks/usePerformanceMonitoring';
 import { MainPageSkeleton } from '@/components/loading-skeletons';
 
-// Enhanced dynamic import with better error handling and preloading
+// Simplified dynamic import
 const AIMarkerComponent = dynamic(
-  () => import('./aimarker.jsx').then(mod => {
-    if (mod.default) return mod.default;
-    return mod;
-  }),
+  () => import('./aimarker'),
   {
     ssr: false,
     loading: () => <MainPageSkeleton />,

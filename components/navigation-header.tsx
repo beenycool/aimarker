@@ -51,14 +51,6 @@ export function NavigationHeader() {
             </Link>
           </li>
         )}
-        <li>
-          <Link
-            href="/games"
-            className={`${isGamesPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
-          >
-            Football Tracker
-          </Link>
-        </li>
         {(showDebugLink || isDebugPage) && (
           <li>
             <Link
