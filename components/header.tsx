@@ -11,9 +11,6 @@ export function Header() {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <span className="font-bold">GCSE AI Marker</span>
           </Link>
-          <Link href="/games" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold">Football Tracker</span>
-          </Link>
         </div>
       </div>
     </header>
