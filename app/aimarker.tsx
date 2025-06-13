@@ -570,7 +570,7 @@ const AIMarker = () => {
     <EnhancedLayout>
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <header className="border-b bg-background shadow-sm">
-          <BackendStatusChecker onStatusChange={handleBackendStatusChange} />
+          <BackendStatusChecker onStatusChange={handleBackendStatusChange} getAPI_BASE_URL={getApiBaseUrl} />
           <div className="flex items-center justify-between p-4">
             <h1 className="text-2xl font-bold text-foreground">AI GCSE Marker</h1>
           </div>

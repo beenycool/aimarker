@@ -5,12 +5,15 @@ import React from 'react';
 
 // Dynamically import APIInitializer as it needs to run client-side
 const APIInitializer = dynamic(
-  () => import('@/components/api-initializer').then(mod => mod.APIInitializer),
-  { ssr: false }
+  () => import('@/components/api-initializer'),
+  {
+    ssr: false,
+    loading: () => null
+  }
 );
 
 const ClientLayoutItems: React.FC = () => {
   return <APIInitializer />;
 };
 
-export default ClientLayoutItems; 
+export default ClientLayoutItems;

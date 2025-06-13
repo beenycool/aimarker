@@ -68,7 +68,11 @@ const nextConfig = {
       
       // Tree shaking optimization
       config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
+      config.optimization.sideEffects = [
+        '**/*.css',
+        '**/*.scss',
+        '**/globals.css'
+      ];
       
       // Module concatenation
       config.optimization.concatenateModules = true;

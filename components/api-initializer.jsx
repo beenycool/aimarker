@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 import { initializeApiHelpers } from '@/lib/api-helpers';
 
 /**
- * APIInitializer - Component to initialize API helpers 
+ * APIInitializer - Component to initialize API helpers
  * This component ensures API helpers are properly initialized early
  * in the application lifecycle to prevent timing issues or reference errors
  */
-export function APIInitializer() {
+function APIInitializer() {
   useEffect(() => {
     // Initialize variables if they don't exist yet
     if (typeof window !== 'undefined') {
@@ -43,4 +43,7 @@ export function APIInitializer() {
 
   // This component doesn't render anything visible
   return null;
-} 
+}
+
+// Export as default only to avoid webpack factory errors
+export default APIInitializer;

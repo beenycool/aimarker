@@ -22,6 +22,8 @@ import { TeamExport } from './team-export';
 import { SeasonMode } from './season-mode';
 import { QuickPlayerCreator } from './quick-player-creator';
 import { ManualMatchEntry } from './manual-match-entry';
+import { MatchHistory } from './match-history';
+import { TeamManager } from './team-manager';
 
 const POSITIONS = [
   { value: 'GK', label: 'Goalkeeper' },
@@ -73,8 +75,12 @@ export default function GamesPage() {
     name: team?.name || 'My Team',
     players: (team?.players || []) as Player[],
     matches: (team?.matches || []) as Match[],
-    id: team?.id
+    id: (team as any)?.id || (team as any)?._id || `team-${Date.now()}`
   };
+
+  // Multiple teams state
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
   const [isAddMatchOpen, setIsAddMatchOpen] = useState(false);
