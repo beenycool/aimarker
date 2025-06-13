@@ -4,7 +4,7 @@ import { useCallback, useRef, useEffect } from 'react';
 import debounce from 'lodash.debounce';
 
 // Properly defined hooks with clean function context
-export const useSubjectDetection = (subjectKeywords, loading) => {
+export const useSubjectDetection = (subjectKeywords, loading, hasManuallySetSubject, allSubjects, setSubject, setDetectedSubject, setSuccess) => {
   // Hook to classify subject from text
   const classifySubjectAI = useCallback(async (answerText) => {
     if (!answerText || answerText.length < 20) return null;

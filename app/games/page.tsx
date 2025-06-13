@@ -68,6 +68,14 @@ export default function GamesPage() {
     clearTeamData: clearAllTeamData
   } = useFootballTeam();
 
+  // Type-safe team with default values
+  const safeTeam: Team = {
+    name: team?.name || 'My Team',
+    players: (team?.players || []) as Player[],
+    matches: (team?.matches || []) as Match[],
+    id: team?.id
+  };
+
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
   const [isAddMatchOpen, setIsAddMatchOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -104,7 +112,7 @@ export default function GamesPage() {
 
   const [newMatch, setNewMatch] = useState({
     opponent: '',
-    homeTeam: team.name,
+    homeTeam: safeTeam.name,
     awayTeam: '',
     homeScore: 0,
     awayScore: 0,
@@ -258,7 +266,9 @@ export default function GamesPage() {
       // Force reload from localStorage
       const savedTeam = localStorage.getItem('footballTeam');
       if (savedTeam) {
-        setTeam(JSON.parse(savedTeam));
+        const parsedTeam = JSON.parse(savedTeam);
+        // Save the team using the existing saveTeamData method
+        saveTeamData(parsedTeam);
       }
     }
   };
@@ -309,25 +319,28 @@ export default function GamesPage() {
   const handleManualMatchEntry = async (match: Match) => {
     try {
       // Update player stats based on the match
-      const playerUpdates = team.players.map(player => {
-        const playerStat = match.playerStats.find(ps => ps.playerId === player.id);
+      const playerUpdates = safeTeam.players.map((player: Player) => {
+        const playerId = player.id || player._id;
+        if (!playerId) return null;
+        
+        const playerStat = match.playerStats.find(ps => ps.playerId === playerId);
         if (playerStat) {
           return {
-            id: player.id,
+            id: playerId,
             updates: {
-              goals: player.goals + playerStat.goals,
-              assists: player.assists + playerStat.assists,
-              appearances: player.appearances + 1
+              goals: (player.goals || 0) + playerStat.goals,
+              assists: (player.assists || 0) + playerStat.assists,
+              appearances: (player.appearances || 0) + 1
             }
           };
         }
         return {
-          id: player.id,
+          id: playerId,
           updates: {
-            appearances: player.appearances + 1
+            appearances: (player.appearances || 0) + 1
           }
         };
-      });
+      }).filter((update): update is { id: string; updates: any } => update !== null);
 
       // Update all players
       for (const { id, updates } of playerUpdates) {
@@ -336,8 +349,8 @@ export default function GamesPage() {
 
       // Add match to team history - this might need a separate API endpoint
       const updatedTeam = {
-        ...team,
-        matches: [...team.matches, match]
+        ...safeTeam,
+        matches: [...safeTeam.matches, match]
       };
       await saveTeamData(updatedTeam);
     } catch (error) {

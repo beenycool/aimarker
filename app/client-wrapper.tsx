@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import React, { Suspense } from 'react';
 import usePerformanceMonitoring from './hooks/usePerformanceMonitoring';
 import { MainPageSkeleton } from '@/components/loading-skeletons';
-
 // Simplified dynamic import
 const AIMarkerComponent = dynamic(
   () => import('./aimarker'),

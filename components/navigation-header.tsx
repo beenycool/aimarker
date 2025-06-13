@@ -1,67 +1,36 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export function NavigationHeader() {
-  const [showDebugLink, setShowDebugLink] = useState(false);
   const pathname = usePathname();
-  
-  // Initialize from localStorage
-  useEffect(() => {
-    const savedValue = localStorage.getItem('showDebugLink');
-    if (savedValue === 'true') {
-      setShowDebugLink(true);
-    }
-  }, []);
-  
-  // Listen for Ctrl+Shift+D to show/hide debug link
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'd') {
-        e.preventDefault();
-        setShowDebugLink(prev => {
-          const newValue = !prev;
-          localStorage.setItem('showDebugLink', newValue.toString());
-          return newValue;
-        });
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-  
-  // If we're already on the debug page, always show the home link
-  const isDebugPage = pathname === '/debug';
-  const isHomePage = pathname === '/';
-  const isGamesPage = pathname === '/games';
-  
+  const isDevEnvironment = process.env.NODE_ENV === 'development';
+
   return (
-    <nav className="fixed top-2 right-2 z-50 bg-background/80 backdrop-blur-sm rounded-md shadow-sm px-2 py-1 border border-border">
-      <ul className="flex items-center gap-2 text-xs">
-        {!isHomePage && (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="flex items-center justify-between px-4 py-2">
+        <ul className="flex items-center space-x-4">
           <li>
-            <Link
-              href="/"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              AI Marker
+            <Link href="/" className={`text-sm font-medium ${pathname === '/' ? 'text-primary' : 'text-muted-foreground'} transition-colors hover:text-primary`}>
+              Home
             </Link>
           </li>
-        )}
-        {(showDebugLink || isDebugPage) && (
           <li>
-            <Link
-              href="/debug"
-              className={`${isDebugPage ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
-            >
-              Debug
+            <Link href="/marker" className={`text-sm font-medium ${pathname === '/marker' ? 'text-primary' : 'text-muted-foreground'} transition-colors hover:text-primary`}>
+              Marker
             </Link>
           </li>
-        )}
-      </ul>
-    </nav>
+          {isDevEnvironment && (
+            <li>
+              <Link href="/debug" className={`text-sm font-medium ${pathname === '/debug' ? 'text-primary' : 'text-muted-foreground'} transition-colors hover:text-primary`}>
+                Debug
+              </Link>
+            </li>
+          )}
+        </ul>
+      </nav>
+    </header>
   );
 } 

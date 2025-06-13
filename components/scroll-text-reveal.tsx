@@ -105,8 +105,8 @@ export function ScrollCounter({ target, suffix = '', className = '', duration = 
       >
         {isInView && (
           <motion.span
-            initial={0}
-            animate={target}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration, ease: "easeOut" }}
           >
             {target}

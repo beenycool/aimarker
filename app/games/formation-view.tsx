@@ -82,7 +82,7 @@ export function FormationView({ players, onPlayerClick }: FormationViewProps) {
       // Find best player for this position
       const bestPlayer = availablePlayers
         .filter(p => p.position === pos.position)
-        .sort((a, b) => b.overallRating - a.overallRating)[0];
+        .sort((a, b) => (b.overallRating || 0) - (a.overallRating || 0))[0];
       
       if (bestPlayer) {
         newAssignment[`${pos.position}-${index}`] = bestPlayer;
@@ -91,7 +91,7 @@ export function FormationView({ players, onPlayerClick }: FormationViewProps) {
       } else {
         // If no exact position match, find best overall player
         const anyPlayer = availablePlayers
-          .sort((a, b) => b.overallRating - a.overallRating)[0];
+          .sort((a, b) => (b.overallRating || 0) - (a.overallRating || 0))[0];
         if (anyPlayer) {
           newAssignment[`${pos.position}-${index}`] = anyPlayer;
           const playerIndex = availablePlayers.indexOf(anyPlayer);
@@ -107,9 +107,9 @@ export function FormationView({ players, onPlayerClick }: FormationViewProps) {
     const assignedPlayers = Object.values(selectedPlayers).filter(p => p !== null) as Player[];
     if (assignedPlayers.length === 0) return { avgRating: 0, totalGoals: 0, totalAssists: 0, chemistry: 0 };
     
-    const avgRating = assignedPlayers.reduce((sum, p) => sum + p.overallRating, 0) / assignedPlayers.length;
-    const totalGoals = assignedPlayers.reduce((sum, p) => sum + p.goals, 0);
-    const totalAssists = assignedPlayers.reduce((sum, p) => sum + p.assists, 0);
+    const avgRating = assignedPlayers.reduce((sum, p) => sum + (p.overallRating || 0), 0) / assignedPlayers.length;
+    const totalGoals = assignedPlayers.reduce((sum, p) => sum + (p.goals || 0), 0);
+    const totalAssists = assignedPlayers.reduce((sum, p) => sum + (p.assists || 0), 0);
     
     // Calculate chemistry (players in correct positions get bonus)
     let chemistry = 0;
@@ -260,8 +260,8 @@ export function FormationView({ players, onPlayerClick }: FormationViewProps) {
                     <Badge className={`${getPositionColor(player.position)} text-white text-xs`}>
                       {player.position}
                     </Badge>
-                    <span className={`font-bold ${getRatingColor(player.overallRating)}`}>
-                      {player.overallRating}
+                    <span className={`font-bold ${getRatingColor(player.overallRating || 0)}`}>
+                      {player.overallRating || 0}
                     </span>
                   </div>
                   <div className="font-medium text-sm mt-1">{player.name}</div>

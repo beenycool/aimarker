@@ -1,5 +1,6 @@
 // Component exports for AIMarker
 export { BackendStatusChecker } from './BackendStatusChecker.jsx';
+export { BackendStatusIndicator } from './BackendStatusIndicator.jsx';
 export { EnhancedAlert } from './EnhancedAlert.jsx';
 export { TopBar } from './TopBar.jsx';
 export { QuickGuide } from './QuickGuide.jsx';

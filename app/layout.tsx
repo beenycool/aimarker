@@ -2,8 +2,9 @@ import React from "react";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { NavigationHeader } from "@/components/navigation-header";
+import { ThemeToggle } from "@/components/theme-toggle";
 import ClientLayoutItems from "@/components/layout/client-layout-items";
+import StagewiseToolbarClient from "@/components/layout/StagewiseToolbarClient";
 
 export const metadata: Metadata = {
   title: "GCSE AI Marker | Intelligent Exam Grading",
@@ -78,16 +79,21 @@ export default function RootLayout({
         <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: dark)" />
       </head>
-      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
+      <body 
+        className="min-h-screen bg-background text-foreground font-sans antialiased"
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <NavigationHeader />
+          <div className="fixed top-4 right-4 z-50">
+            <ThemeToggle />
+          </div>
           {children}
           <ClientLayoutItems />
+          <StagewiseToolbarClient />
         </ThemeProvider>
       </body>
     </html>

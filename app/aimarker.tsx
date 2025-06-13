@@ -1,8 +1,7 @@
 "use client";
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
-// AnimatePresence temporarily removed due to import issue
-// import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import 'katex/dist/katex.min.css';
 import { getSubjectGuidance } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -62,6 +61,17 @@ import {
   MathMarkdown
 } from './aimarker/components';
 
+// Enhanced layout components
+import { EnhancedLayout } from './aimarker/enhanced-layout';
+import { SampleQuestions } from '@/components/ui/sample-questions';
+
+// Refactored Welcome Screen Components
+import { Hero } from './aimarker/components/Hero';
+import { Features } from './aimarker/components/Features';
+import { HowItWorks } from './aimarker/components/HowItWorks';
+import { CTA } from './aimarker/components/CTA';
+import { Stats } from './aimarker/components/Stats';
+
 const useViewport = () => {
   const [viewportSize, setViewportSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 0,
@@ -83,8 +93,8 @@ const useViewport = () => {
 
 const AIMarker = () => {
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.BACKEND_STATUS) {
-      window.BACKEND_STATUS = { status: 'checking', lastChecked: null };
+    if (typeof window !== 'undefined' && !(window as any).BACKEND_STATUS) {
+      (window as any).BACKEND_STATUS = { status: 'checking', lastChecked: null };
     }
     setIsClient(true);
   }, []);
@@ -111,7 +121,7 @@ const AIMarker = () => {
   const [modelThinking, setModelThinking] = useState([]);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [tier, setTier] = useState("higher");
-  const [achievedMarks, setAchievedMarks] = useState(null);
+  const [achievedMarks, setAchievedMarks] = useState<number | null>(null);
   const [ocrTextPreview, setOcrTextPreview] = useState("");
   const [showOcrPreviewDialog, setShowOcrPreviewDialog] = useState(false);
   const [hasExtractedText, setHasExtractedText] = useState(false);
@@ -138,28 +148,30 @@ const AIMarker = () => {
   const [isClient, setIsClient] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [grade, setGrade] = useState("");
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [detectedSubject, setDetectedSubject] = useState(null);
-  const [shortcutFeedback, setShortcutFeedback] = useState(null);
-  const [processingProgress, setProcessingProgress] = useState("");
-  const [history, setHistory] = useState([]);
+  const [error, setError] = useState<any>(null);
+  const [success, setSuccess] = useState<any>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [detectedSubject, setDetectedSubject] = useState<string | null>(null);
+  const [shortcutFeedback, setShortcutFeedback] = useState<string | null>(null);
+  const [processingProgress, setProcessingProgress] = useState<number>(0);
+  const [history, setHistory] = useState<any[]>([]);
   const [lastRequestTime, setLastRequestTime] = useState(0);
   const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat-v3-0324:free");
-  const [modelLastRequestTimes, setModelLastRequestTimes] = useState({});
+  const [modelLastRequestTimes, setModelLastRequestTimes] = useState<{[key: string]: number}>({});
   const [backendStatus, setBackendStatus] = useState('checking');
-  const currentModelForRequestRef = useRef(null);
+  const currentModelForRequestRef = useRef<string | null>(null);
   const [enableGradeBoundaries, setEnableGradeBoundaries] = useState(false);
-  const [gradeBoundaries, setGradeBoundaries] = useState({
+  const [gradeBoundaries, setGradeBoundaries] = useState<{ [key: string]: number }>({
     '9': 85, '8': 75, '7': 65, '6': 55, '5': 45, '4': 35, '3': 25, '2': 15
   });
-  const [boundariesSource, setBoundariesSource] = useState(null);
+  const [boundariesSource, setBoundariesSource] = useState<string | null>(null);
+  const hasManuallySetSubject = useRef(false);
   const { checkBackendStatus } = useBackendStatus(getApiBaseUrl());
-  const { debouncedClassifySubject } = useSubjectDetection(subjectKeywords, loading);
-    const hasManuallySetSubject = useRef(false);
+  const { debouncedClassifySubject } = useSubjectDetection(subjectKeywords, loading, hasManuallySetSubject, allSubjects, setSubject, setDetectedSubject, setSuccess);
 
 
-  const setCurrentModelForRequest = (model) => {
+  const setCurrentModelForRequest = (model: string) => {
     currentModelForRequestRef.current = model;
     setModelLastRequestTimes(prev => ({ ...prev, [model]: Date.now() }));
   };
@@ -205,15 +217,15 @@ const AIMarker = () => {
   useEffect(() => { localStorage.setItem(LOCALSTORAGE_KEYS.TIER, tier); }, [tier]);
   useEffect(() => { localStorage.setItem(LOCALSTORAGE_KEYS.ENABLE_GRADE_BOUNDARIES, String(enableGradeBoundaries)); }, [enableGradeBoundaries]);
   useEffect(() => { localStorage.setItem(LOCALSTORAGE_KEYS.GRADE_BOUNDARIES, JSON.stringify(gradeBoundaries)); }, [gradeBoundaries]);
-  useEffect(() => { localStorage.setItem(LOCALSTORAGE_KEYS.BOUNDARIES_SOURCE, boundariesSource); }, [boundariesSource]);
+  useEffect(() => { localStorage.setItem(LOCALSTORAGE_KEYS.BOUNDARIES_SOURCE, boundariesSource ?? ''); }, [boundariesSource]);
 
-  const handleBackendStatusChange = useCallback((status) => {
+  const handleBackendStatusChange = useCallback((status: 'checking' | 'online' | 'offline') => {
     setBackendStatus(status);
   }, []);
 
   useEffect(() => {
     if (question.length > 20 && !hasManuallySetSubject.current && !loading) {
-      debouncedClassifySubject(question + " " + answer, (detected) => {
+      debouncedClassifySubject(question + " " + answer, (detected: string | null) => {
         if (detected && allSubjects.find(s => s.value === detected)) {
             setSubject(detected);
             setDetectedSubject(detected);
@@ -229,9 +241,13 @@ const AIMarker = () => {
             prompt += ` The work is for the ${tier} tier.`;
         }
         if (questionType !== "general") {
-            const selectedQuestionType = QUESTION_TYPES[subject]?.[examBoard]?.find(qt => qt.value === questionType);
-            if (selectedQuestionType) {
-                prompt += ` Specifically, this is for ${selectedQuestionType.label}.`;
+            const subjectQuestionTypes = QUESTION_TYPES[subject as keyof typeof QUESTION_TYPES];
+            if (subjectQuestionTypes) {
+                const boardQuestionTypes = subjectQuestionTypes[examBoard as keyof typeof subjectQuestionTypes];
+                const selectedQuestionType = boardQuestionTypes?.find((qt: { value: string; }) => qt.value === questionType);
+                if (selectedQuestionType) {
+                    prompt += ` Specifically, this is for ${selectedQuestionType.label}.`;
+                }
             }
         }
         if (totalMarks) prompt += ` The question is out of ${totalMarks} marks.`;
@@ -329,8 +345,11 @@ const AIMarker = () => {
             }
         }
         
-    } catch (e) {
-      setError({ type: "api_error", message: e.message, onRetry: handleSubmitForMarking });
+    } catch (e: unknown) {
+      setLoading(false);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      setError({ message: `An error occurred: ${errorMessage}` });
+      toast.error(`An error occurred: ${errorMessage}`);
     } finally {
         setLoading(false);
         setProcessingProgress("");
@@ -386,6 +405,55 @@ const AIMarker = () => {
     toast.success("Form has been reset.");
   };
 
+  const handleGetStarted = () => {
+    setShowWelcome(false);
+    setHasInteracted(true);
+  };
+
+  const handleUseSample = (sample: any) => {
+    setQuestion(sample.question);
+    setAnswer(sample.answer || "");
+    setSubject(sample.subject);
+    setExamBoard(sample.examBoard);
+    setMarkScheme(sample.markScheme || "");
+    setTotalMarks(sample.totalMarks || "");
+    hasManuallySetSubject.current = true;
+    setShowWelcome(false);
+    setHasInteracted(true);
+    toast.success("Sample question loaded!");
+  };
+
+  const handleFollowUpSubmit = async () => {
+    if (!followUpQuestion.trim()) return;
+    
+    setFollowUpLoading(true);
+    try {
+      const response = await fetch(constructApiUrl('/api/follow-up'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalQuestion: question,
+          originalAnswer: answer,
+          originalFeedback: feedback,
+          followUpQuestion: followUpQuestion
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Follow-up request failed');
+      }
+      
+      const data = await response.json();
+      setFollowUpResponse(data.response);
+      setFollowUpQuestion('');
+    } catch (error) {
+      console.error('Follow-up error:', error);
+      toast.error('Failed to get follow-up response');
+    } finally {
+      setFollowUpLoading(false);
+    }
+  };
+
   const handleBulkProcess = async () => {
     if (!bulkItems.length) {
       toast.error("No items to process");
@@ -397,7 +465,7 @@ const AIMarker = () => {
     setBulkProgress({ processed: 0, total: bulkItems.length });
     bulkProcessingRef.current = { cancel: false, pause: false };
 
-    const processItem = async (item, index) => {
+    const processItem = async (item: any, index: number) => {
       if (bulkProcessingRef.current.cancel) return null;
 
       while (bulkProcessingRef.current.pause) {
@@ -448,7 +516,7 @@ const AIMarker = () => {
       }
     };
 
-    const processBatch = async (items) => {
+    const processBatch = async (items: any[]) => {
       const promises = items.map(processItem);
       const results = await Promise.all(promises);
       
@@ -482,177 +550,212 @@ const AIMarker = () => {
   useHotkeys('ctrl+enter, cmd+enter', (e) => { e.preventDefault(); handleSubmitForMarking(); }, { enableOnTags: ['INPUT', 'TEXTAREA'] });
   useHotkeys('alt+r, opt+r', (e) => { e.preventDefault(); resetForm(); });
 
+  if (showWelcome) {
+    return (
+      <div className="bg-background min-h-screen">
+        <header className="py-4 px-6 flex justify-between items-center">
+          <h1 className="text-xl font-bold">AI GCSE Marker</h1>
+        </header>
+        <Hero handleGetStarted={handleGetStarted} />
+        <Features />
+        <HowItWorks />
+        <SampleQuestions onUseSample={handleUseSample} />
+        <CTA handleGetStarted={handleGetStarted} />
+        <Stats />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <TopBar version="2.2.0" backendStatus={backendStatus} />
-      {isClient && showGuide && <QuickGuide onClose={() => setShowGuide(false)} />}
-      <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
-        <BackendStatusChecker onStatusChange={handleBackendStatusChange} getAPI_BASE_URL={getApiBaseUrl} />
-        <EnhancedAlert error={error} success={success} onRetry={handleSubmitForMarking} />
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="answer">Answer</TabsTrigger>
-            <TabsTrigger value="feedback">Feedback</TabsTrigger>
-            <TabsTrigger value="bulk">
-              Bulk Mark
-              <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Beta</Badge>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="answer" className="mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Main Content - Question & Answer */}
-              <div className="lg:col-span-2 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Question & Answer</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="question">Question</Label>
-                      <Textarea
-                        id="question"
-                        placeholder="Enter the question here..."
-                        value={question}
-                        onChange={(e) => {
-                          setQuestion(e.target.value);
-                          const detected = detectTotalMarksFromQuestion(e.target.value);
-                          if (detected && !totalMarks) {
-                            setTotalMarks(detected.toString());
-                          }
-                        }}
-                        className="min-h-[120px]"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="answer">Student's Answer</Label>
-                      <Textarea
-                        id="answer"
-                        placeholder="Enter your answer here..."
-                        value={answer}
-                        onChange={(e) => setAnswer(e.target.value)}
-                        rows={10}
-                        className="min-h-[200px]"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Additional Materials */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Additional Materials</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="markScheme">Mark Scheme (Optional)</Label>
-                      <Textarea
-                        id="markScheme"
-                        placeholder="Enter the mark scheme here..."
-                        value={markScheme}
-                        onChange={(e) => setMarkScheme(e.target.value)}
-                        rows={4}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="textExtract">Text Extract (Optional)</Label>
-                      <Textarea
-                        id="textExtract"
-                        placeholder="Enter any relevant text extract here..."
-                        value={textExtract}
-                        onChange={(e) => setTextExtract(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="relevantMaterial">Other Relevant Material (Optional)</Label>
-                      <Textarea
-                        id="relevantMaterial"
-                        placeholder="Enter any other relevant material here..."
-                        value={relevantMaterial}
-                        onChange={(e) => setRelevantMaterial(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="image">Upload Image</Label>
-                      <Input
-                        id="image"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            setImage(file);
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              setRelevantMaterialImageBase64(event.target.result);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                      {image && (
-                        <div className="mt-2">
-                          <img
-                            src={URL.createObjectURL(image)}
-                            alt="Uploaded"
-                            className="max-w-full h-32 object-contain border rounded"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Settings Sidebar */}
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Assessment Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="subject">Subject</Label>
-                      <div className="flex gap-2">
-                        <Select value={subject} onValueChange={(value) => {
-                          setSubject(value);
-                          hasManuallySetSubject.current = true;
-                          setDetectedSubject(null);
-                        }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select subject" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(allSubjects || []).map((subj) => (
-                              <SelectItem key={subj.value} value={subj.value}>
-                                {subj.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setIsAddingSubject(!isAddingSubject)}
-                        >
-                          +
-                        </Button>
+    <EnhancedLayout>
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <header className="border-b bg-background shadow-sm">
+          <BackendStatusChecker onStatusChange={handleBackendStatusChange} />
+          <div className="flex items-center justify-between p-4">
+            <h1 className="text-2xl font-bold text-foreground">AI GCSE Marker</h1>
+          </div>
+        </header>
+        {isClient && showGuide && <QuickGuide onClose={() => setShowGuide(false)} />}
+        <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+          <EnhancedAlert error={error} success={success} onRetry={handleSubmitForMarking} />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="answer">Answer</TabsTrigger>
+              <TabsTrigger value="feedback">Feedback</TabsTrigger>
+              <TabsTrigger value="bulk">
+                Bulk Mark
+                <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Beta</Badge>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="answer" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Main Content - Question & Answer */}
+                <div className="lg:col-span-2 space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Question & Answer</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="question">Question</Label>
+                        <Textarea
+                          id="question"
+                          placeholder="Enter the question here..."
+                          value={question}
+                          onChange={(e) => {
+                            setQuestion(e.target.value);
+                            const detected = detectTotalMarksFromQuestion(e.target.value);
+                            if (detected && !totalMarks) {
+                              setTotalMarks(detected.toString());
+                            }
+                          }}
+                          className="min-h-[120px]"
+                        />
                       </div>
-                      {detectedSubject && (
-                        <Badge variant="secondary" className="mt-1">
-                          Auto-detected: {detectedSubject}
-                        </Badge>
-                      )}
-                      {isAddingSubject && (
-                        <div className="mt-2 flex gap-2">
-                          <Input
-                            ref={customSubjectInputRef}
-                            placeholder="Custom subject"
-                            value={customSubject}
-                            onChange={(e) => setCustomSubject(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
+                      <div>
+                        <Label htmlFor="answer">Student's Answer</Label>
+                        <Textarea
+                          id="answer"
+                          placeholder="Enter your answer here..."
+                          value={answer}
+                          onChange={(e) => setAnswer(e.target.value)}
+                          rows={10}
+                          className="min-h-[200px]"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Additional Materials */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Additional Materials</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="markScheme">Mark Scheme (Optional)</Label>
+                        <Textarea
+                          id="markScheme"
+                          placeholder="Enter the mark scheme here..."
+                          value={markScheme}
+                          onChange={(e) => setMarkScheme(e.target.value)}
+                          rows={4}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="textExtract">Text Extract (Optional)</Label>
+                        <Textarea
+                          id="textExtract"
+                          placeholder="Enter any relevant text extract here..."
+                          value={textExtract}
+                          onChange={(e) => setTextExtract(e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="relevantMaterial">Other Relevant Material (Optional)</Label>
+                        <Textarea
+                          id="relevantMaterial"
+                          placeholder="Enter any other relevant material here..."
+                          value={relevantMaterial}
+                          onChange={(e) => setRelevantMaterial(e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="image">Upload Image</Label>
+                        <Input
+                          id="image"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              setImage(file);
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                setRelevantMaterialImageBase64(event.target.result);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        {image && (
+                          <div className="mt-2">
+                            <img
+                              src={URL.createObjectURL(image)}
+                              alt="Uploaded"
+                              className="max-w-full h-32 object-contain border rounded"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Settings Sidebar */}
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Assessment Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="subject">Subject</Label>
+                        <div className="flex gap-2">
+                          <Select value={subject} onValueChange={(value) => {
+                            setSubject(value);
+                            hasManuallySetSubject.current = true;
+                            setDetectedSubject(null);
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select subject" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(allSubjects || []).map((subj) => (
+                                <SelectItem key={subj.value} value={subj.value}>
+                                  {subj.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setIsAddingSubject(!isAddingSubject)}
+                          >
+                            +
+                          </Button>
+                        </div>
+                        {detectedSubject && (
+                          <Badge variant="secondary" className="mt-1">
+                            Auto-detected: {detectedSubject}
+                          </Badge>
+                        )}
+                        {isAddingSubject && (
+                          <div className="mt-2 flex gap-2">
+                            <Input
+                              ref={customSubjectInputRef}
+                              placeholder="Custom subject"
+                              value={customSubject}
+                              onChange={(e) => setCustomSubject(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const newSubject = {
+                                    value: customSubject.toLowerCase().replace(/\s+/g, '_'),
+                                    label: customSubject
+                                  };
+                                  setAllSubjects([...allSubjects, newSubject]);
+                                  setSubject(newSubject.value);
+                                  setCustomSubject("");
+                                  setIsAddingSubject(false);
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => {
                                 const newSubject = {
                                   value: customSubject.toLowerCase().replace(/\s+/g, '_'),
                                   label: customSubject
@@ -661,473 +764,460 @@ const AIMarker = () => {
                                 setSubject(newSubject.value);
                                 setCustomSubject("");
                                 setIsAddingSubject(false);
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              const newSubject = {
-                                value: customSubject.toLowerCase().replace(/\s+/g, '_'),
-                                label: customSubject
-                              };
-                              setAllSubjects([...allSubjects, newSubject]);
-                              setSubject(newSubject.value);
-                              setCustomSubject("");
-                              setIsAddingSubject(false);
-                            }}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                              }}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        )}
+                      </div>
 
-                    <div>
-                      <Label htmlFor="examBoard">Exam Board</Label>
-                      <Select value={examBoard} onValueChange={setExamBoard}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select exam board" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {EXAM_BOARDS.map((board) => (
-                            <SelectItem key={board.value} value={board.value}>
-                              {board.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="userType">User Type</Label>
-                      <Select value={userType} onValueChange={setUserType}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select user type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {USER_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {allSubjects.find(s => s.value === subject)?.hasTiers && (
                       <div>
-                        <Label htmlFor="tier">Tier</Label>
-                        <Select value={tier} onValueChange={setTier}>
+                        <Label htmlFor="examBoard">Exam Board</Label>
+                        <Select value={examBoard} onValueChange={setExamBoard}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select tier" />
+                            <SelectValue placeholder="Select exam board" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="foundation">Foundation</SelectItem>
-                            <SelectItem value="higher">Higher</SelectItem>
+                            {EXAM_BOARDS.map((board) => (
+                              <SelectItem key={board.value} value={board.value}>
+                                {board.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
-                    )}
 
-                    <div>
-                      <Label htmlFor="questionType">Question Type</Label>
-                      <Select value={questionType} onValueChange={setQuestionType}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select question type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="general">General</SelectItem>
-                          {(QUESTION_TYPES[subject]?.[examBoard] || []).map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
+                      <div>
+                        <Label htmlFor="userType">User Type</Label>
+                        <Select value={userType} onValueChange={setUserType}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select user type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {USER_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {allSubjects.find(s => s.value === subject)?.hasTiers && (
+                        <div>
+                          <Label htmlFor="tier">Tier</Label>
+                          <Select value={tier} onValueChange={setTier}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select tier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="foundation">Foundation</SelectItem>
+                              <SelectItem value="higher">Higher</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label htmlFor="questionType">Question Type</Label>
+                        <Select value={questionType} onValueChange={setQuestionType}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select question type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">General Assessment</SelectItem>
+                            {(QUESTION_TYPES[subject as keyof typeof QUESTION_TYPES]?.[examBoard as keyof typeof QUESTION_TYPES[keyof typeof QUESTION_TYPES]] || []).map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="totalMarks">Total Marks</Label>
+                        <Input
+                          id="totalMarks"
+                          type="number"
+                          placeholder="e.g., 20"
+                          value={totalMarks}
+                          onChange={(e) => setTotalMarks(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="model">AI Model</Label>
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select AI model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AI_MODELS.map((model) => (
+                              <SelectGroup key={model.category}>
+                                <SelectLabel>{model.category}</SelectLabel>
+                                {model.models.map((m) => (
+                                  <SelectItem key={m.value} value={m.value}>
+                                    <div className="flex items-center gap-2">
+                                      {m.label}
+                                      {m.badge && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {m.badge}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Grade Boundaries */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Grade Boundaries</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="enableGradeBoundaries"
+                          checked={enableGradeBoundaries}
+                          onChange={(e) => setEnableGradeBoundaries(e.target.checked)}
+                        />
+                        <Label htmlFor="enableGradeBoundaries">Enable Grade Boundaries</Label>
+                      </div>
+                      {enableGradeBoundaries && (
+                        <div className="space-y-2">
+                          {Object.entries(gradeBoundaries).sort(([a], [b]) => parseInt(b) - parseInt(a)).map(([grade, threshold]) => (
+                            <div key={grade} className="flex items-center space-x-2">
+                              <Label className="w-12">Grade {grade}:</Label>
+                              <Input
+                                type="number"
+                                value={threshold}
+                                onChange={(e) => setGradeBoundaries(prev => ({ ...prev, [grade]: parseInt(e.target.value) || 0 }))}
+                                className="w-20"
+                              />
+                              <span className="text-sm text-muted-foreground">%</span>
+                            </div>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                    <div>
-                      <Label htmlFor="totalMarks">Total Marks</Label>
-                      <Input
-                        id="totalMarks"
-                        type="number"
-                        placeholder="e.g., 20"
-                        value={totalMarks}
-                        onChange={(e) => setTotalMarks(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="model">AI Model</Label>
-                      <Select value={selectedModel} onValueChange={setSelectedModel}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select AI model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AI_MODELS.map((model) => (
-                            <SelectGroup key={model.category}>
-                              <SelectLabel>{model.category}</SelectLabel>
-                              {model.models.map((m) => (
-                                <SelectItem key={m.value} value={m.value}>
-                                  <div className="flex items-center gap-2">
-                                    {m.label}
-                                    {m.badge && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {m.badge}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Grade Boundaries */}
+                  {/* Action Buttons */}
+                  <Card>
+                    <CardContent className="pt-6 space-y-2">
+                      <Button
+                        onClick={handleSubmitForMarking}
+                        disabled={loading || !answer}
+                        className="w-full"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          "Mark Answer"
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={resetForm}
+                        className="w-full"
+                      >
+                        Reset Form
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowGuide(true)}
+                        className="w-full"
+                      >
+                        <HelpCircle className="mr-2 h-4 w-4" />
+                        Show Guide
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="feedback" className="mt-4">
+              <FeedbackDisplay
+                loading={loading}
+                feedback={feedback}
+                grade={grade}
+                selectedModel={selectedModel}
+                modelThinking={modelThinking}
+                achievedMarks={achievedMarks}
+                totalMarks={totalMarks}
+                processingProgress={processingProgress}
+                setActiveTab={setActiveTab}
+                markScheme={markScheme}
+                onAskFollowUp={() => setShowFollowUpDialog(true)}
+              />
+            </TabsContent>
+            <TabsContent value="bulk" className="mt-4">
+              <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Grade Boundaries</CardTitle>
+                    <CardTitle>Bulk Marking</CardTitle>
+                    <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Beta</Badge>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="enableGradeBoundaries"
-                        checked={enableGradeBoundaries}
-                        onChange={(e) => setEnableGradeBoundaries(e.target.checked)}
+                    <div>
+                      <Label htmlFor="bulkFile">Upload File (CSV, JSON, or TXT)</Label>
+                      <Input
+                        id="bulkFile"
+                        type="file"
+                        accept=".csv,.json,.txt"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          setBulkFile(file);
+                          if (file) {
+                            // Parse the file and extract items
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              try {
+                                const content = event.target.result;
+                                let items = [];
+                                
+                                if (file.name.endsWith('.csv')) {
+                                  const parsed = Papa.parse(content, { header: true });
+                                  items = parsed.data.filter(row => row.question && row.answer);
+                                } else if (file.name.endsWith('.json')) {
+                                  items = JSON.parse(content);
+                                } else if (file.name.endsWith('.txt')) {
+                                  // Simple text format: question|answer per line
+                                  items = content.split('\n')
+                                    .filter(line => line.includes('|'))
+                                    .map(line => {
+                                      const [question, answer] = line.split('|');
+                                      return { question: question.trim(), answer: answer.trim() };
+                                    });
+                                }
+                                
+                                setBulkItems(items);
+                                toast.success(`Loaded ${items.length} items for bulk processing`);
+                              } catch (error) {
+                                toast.error(`Error parsing file: ${error.message}`);
+                              }
+                            };
+                            reader.readAsText(file);
+                          }
+                        }}
+                        ref={bulkFileUploadRef}
                       />
-                      <Label htmlFor="enableGradeBoundaries">Enable Grade Boundaries</Label>
                     </div>
-                    {enableGradeBoundaries && (
-                      <div className="space-y-2">
-                        {Object.entries(gradeBoundaries).sort(([a], [b]) => parseInt(b) - parseInt(a)).map(([grade, threshold]) => (
-                          <div key={grade} className="flex items-center space-x-2">
-                            <Label className="w-12">Grade {grade}:</Label>
-                            <Input
-                              type="number"
-                              value={threshold}
-                              onChange={(e) => setGradeBoundaries(prev => ({ ...prev, [grade]: parseInt(e.target.value) || 0 }))}
-                              className="w-20"
-                            />
-                            <span className="text-sm text-muted-foreground">%</span>
+                    
+                    {bulkItems.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            {bulkItems.length} items loaded
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (bulkItems.length > 0) {
+                                setPreviewItem(bulkItems[0]);
+                                setShowPreviewDialog(true);
+                              }
+                            }}
+                          >
+                            Preview First Item
+                          </Button>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="bulkSettings">Bulk Processing Settings</Label>
+                          <Select value={bulkSettingPreference} onValueChange={setBulkSettingPreference}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select setting source" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="global">Use Current Form Settings</SelectItem>
+                              <SelectItem value="individual">Use Individual Item Settings</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="parallelism">Parallel Processing (1-5)</Label>
+                          <Input
+                            id="parallelism"
+                            type="number"
+                            min="1"
+                            max="5"
+                            value={parallelProcessing}
+                            onChange={(e) => setParallelProcessing(parseInt(e.target.value) || 1)}
+                          />
+                        </div>
+                        
+                        <Button
+                          onClick={handleBulkProcess}
+                          disabled={bulkProcessing || bulkItems.length === 0}
+                          className="w-full"
+                        >
+                          {bulkProcessing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing... ({bulkProgress.processed}/{bulkProgress.total})
+                            </>
+                          ) : (
+                            `Start Bulk Processing (${bulkItems.length} items)`
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {bulkProcessing && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Processing Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <BatchProcessingControls
+                        progress={bulkProgress}
+                        onPause={() => {
+                          setIsBulkProcessingPaused(true);
+                          bulkProcessingRef.current.pause = true;
+                        }}
+                        onResume={() => {
+                          setIsBulkProcessingPaused(false);
+                          bulkProcessingRef.current.pause = false;
+                        }}
+                        onCancel={() => {
+                          setBulkProcessing(false);
+                          bulkProcessingRef.current.cancel = true;
+                          toast.info("Bulk processing cancelled");
+                        }}
+                        isPaused={isBulkProcessingPaused}
+                        parallelism={parallelProcessing}
+                        onParallelismChange={setParallelProcessing}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {bulkResults.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Results ({bulkResults.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {bulkResults.map((item, index) => (
+                          <div
+                            key={index}
+                            className="p-3 border rounded cursor-pointer hover:bg-muted/50"
+                            onClick={() => {
+                              setPreviewItem(item);
+                              setShowPreviewDialog(true);
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">Item {index + 1}</span>
+                              <div className="flex items-center gap-2">
+                                {item.grade && (
+                                  <Badge variant="secondary">Grade {item.grade}</Badge>
+                                )}
+                                {item.achievedMarks && item.totalMarks && (
+                                  <Badge variant="outline">
+                                    {item.achievedMarks}/{item.totalMarks}
+                                  </Badge>
+                                )}
+                                {item.error && (
+                                  <Badge variant="destructive">Error</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1 truncate">
+                              {item.question?.substring(0, 100)}...
+                            </p>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Action Buttons */}
-                <Card>
-                  <CardContent className="pt-6 space-y-2">
-                    <Button
-                      onClick={handleSubmitForMarking}
-                      disabled={loading || !answer}
-                      className="w-full"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        "Mark Answer"
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={resetForm}
-                      className="w-full"
-                    >
-                      Reset Form
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowGuide(true)}
-                      className="w-full"
-                    >
-                      <HelpCircle className="mr-2 h-4 w-4" />
-                      Show Guide
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-          <TabsContent value="feedback" className="mt-4">
-            <FeedbackDisplay
-              loading={loading}
-              feedback={feedback}
-              grade={grade}
-              selectedModel={selectedModel}
-              modelThinking={modelThinking}
-              achievedMarks={achievedMarks}
-              totalMarks={totalMarks}
-              processingProgress={processingProgress}
-              setActiveTab={setActiveTab}
-              markScheme={markScheme}
-              onAskFollowUp={() => setShowFollowUpDialog(true)}
-            />
-          </TabsContent>
-          <TabsContent value="bulk" className="mt-4">
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bulk Marking</CardTitle>
-                  <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Beta</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="bulkFile">Upload File (CSV, JSON, or TXT)</Label>
-                    <Input
-                      id="bulkFile"
-                      type="file"
-                      accept=".csv,.json,.txt"
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        setBulkFile(file);
-                        if (file) {
-                          // Parse the file and extract items
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            try {
-                              const content = event.target.result;
-                              let items = [];
-                              
-                              if (file.name.endsWith('.csv')) {
-                                const parsed = Papa.parse(content, { header: true });
-                                items = parsed.data.filter(row => row.question && row.answer);
-                              } else if (file.name.endsWith('.json')) {
-                                items = JSON.parse(content);
-                              } else if (file.name.endsWith('.txt')) {
-                                // Simple text format: question|answer per line
-                                items = content.split('\n')
-                                  .filter(line => line.includes('|'))
-                                  .map(line => {
-                                    const [question, answer] = line.split('|');
-                                    return { question: question.trim(), answer: answer.trim() };
-                                  });
-                              }
-                              
-                              setBulkItems(items);
-                              toast.success(`Loaded ${items.length} items for bulk processing`);
-                            } catch (error) {
-                              toast.error(`Error parsing file: ${error.message}`);
-                            }
-                          };
-                          reader.readAsText(file);
-                        }
-                      }}
-                      ref={bulkFileUploadRef}
-                    />
-                  </div>
-                  
-                  {bulkItems.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          {bulkItems.length} items loaded
-                        </span>
+                      
+                      <div className="mt-4 flex gap-2">
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => {
-                            if (bulkItems.length > 0) {
-                              setPreviewItem(bulkItems[0]);
-                              setShowPreviewDialog(true);
-                            }
+                            const csvContent = Papa.unparse(bulkResults.map(item => ({
+                              question: item.question,
+                              answer: item.answer,
+                              feedback: item.feedback,
+                              grade: item.grade,
+                              achievedMarks: item.achievedMarks,
+                              totalMarks: item.totalMarks,
+                              error: item.error || ''
+                            })));
+                            
+                            const blob = new Blob([csvContent], { type: 'text/csv' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `bulk_results_${new Date().toISOString().split('T')[0]}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
                           }}
                         >
-                          Preview First Item
+                          Export as CSV
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const jsonContent = JSON.stringify(bulkResults, null, 2);
+                            const blob = new Blob([jsonContent], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `bulk_results_${new Date().toISOString().split('T')[0]}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          Export as JSON
                         </Button>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="bulkSettings">Bulk Processing Settings</Label>
-                        <Select value={bulkSettingPreference} onValueChange={setBulkSettingPreference}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select setting source" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="global">Use Current Form Settings</SelectItem>
-                            <SelectItem value="individual">Use Individual Item Settings</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="parallelism">Parallel Processing (1-5)</Label>
-                        <Input
-                          id="parallelism"
-                          type="number"
-                          min="1"
-                          max="5"
-                          value={parallelProcessing}
-                          onChange={(e) => setParallelProcessing(parseInt(e.target.value) || 1)}
-                        />
-                      </div>
-                      
-                      <Button
-                        onClick={handleBulkProcess}
-                        disabled={bulkProcessing || bulkItems.length === 0}
-                        className="w-full"
-                      >
-                        {bulkProcessing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing... ({bulkProgress.processed}/{bulkProgress.total})
-                          </>
-                        ) : (
-                          `Start Bulk Processing (${bulkItems.length} items)`
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              {bulkProcessing && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Processing Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <BatchProcessingControls
-                      progress={bulkProgress}
-                      onPause={() => {
-                        setIsBulkProcessingPaused(true);
-                        bulkProcessingRef.current.pause = true;
-                      }}
-                      onResume={() => {
-                        setIsBulkProcessingPaused(false);
-                        bulkProcessingRef.current.pause = false;
-                      }}
-                      onCancel={() => {
-                        setBulkProcessing(false);
-                        bulkProcessingRef.current.cancel = true;
-                        toast.info("Bulk processing cancelled");
-                      }}
-                      isPaused={isBulkProcessingPaused}
-                      parallelism={parallelProcessing}
-                      onParallelismChange={setParallelProcessing}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-              
-              {bulkResults.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Results ({bulkResults.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {bulkResults.map((item, index) => (
-                        <div
-                          key={index}
-                          className="p-3 border rounded cursor-pointer hover:bg-muted/50"
-                          onClick={() => {
-                            setPreviewItem(item);
-                            setShowPreviewDialog(true);
-                          }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">Item {index + 1}</span>
-                            <div className="flex items-center gap-2">
-                              {item.grade && (
-                                <Badge variant="secondary">Grade {item.grade}</Badge>
-                              )}
-                              {item.achievedMarks && item.totalMarks && (
-                                <Badge variant="outline">
-                                  {item.achievedMarks}/{item.totalMarks}
-                                </Badge>
-                              )}
-                              {item.error && (
-                                <Badge variant="destructive">Error</Badge>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1 truncate">
-                            {item.question?.substring(0, 100)}...
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-4 flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const csvContent = Papa.unparse(bulkResults.map(item => ({
-                            question: item.question,
-                            answer: item.answer,
-                            feedback: item.feedback,
-                            grade: item.grade,
-                            achievedMarks: item.achievedMarks,
-                            totalMarks: item.totalMarks,
-                            error: item.error || ''
-                          })));
-                          
-                          const blob = new Blob([csvContent], { type: 'text/csv' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `bulk_results_${new Date().toISOString().split('T')[0]}.csv`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        }}
-                      >
-                        Export as CSV
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const jsonContent = JSON.stringify(bulkResults, null, 2);
-                          const blob = new Blob([jsonContent], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `bulk_results_${new Date().toISOString().split('T')[0]}.json`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        }}
-                      >
-                        Export as JSON
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </main>
 
-      <Dialog open={showFollowUpDialog} onOpenChange={setShowFollowUpDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ask a Follow-Up Question</DialogTitle>
-            <DialogDescription>Get clarification on the feedback.</DialogDescription>
-          </DialogHeader>
-          <Textarea placeholder="e.g., Can you explain..." value={followUpQuestion} onChange={e => setFollowUpQuestion(e.target.value)} />
-          {followUpLoading && <Loader2 className="animate-spin" />}
-          {followUpResponse && <div className="prose dark:prose-invert"><MathMarkdown>{followUpResponse}</MathMarkdown></div>}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFollowUpDialog(false)}>Cancel</Button>
-            <Button onClick={() => {}} disabled={followUpLoading}>Submit</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {showPreviewDialog && <BulkItemPreviewDialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog} item={previewItem} onClose={() => setShowPreviewDialog(false)} />}
-      
-      {showKeyboardShortcuts && <KeyboardShortcuts open={showKeyboardShortcuts} onOpenChange={setShowKeyboardShortcuts} />}
-    </div>
+        <Dialog open={showFollowUpDialog} onOpenChange={setShowFollowUpDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ask a Follow-Up Question</DialogTitle>
+              <DialogDescription>Get clarification on the feedback.</DialogDescription>
+            </DialogHeader>
+            <Textarea placeholder="e.g., Can you explain..." value={followUpQuestion} onChange={e => setFollowUpQuestion(e.target.value)} />
+            {followUpLoading && <Loader2 className="animate-spin" />}
+            {followUpResponse && <div className="prose dark:prose-invert"><MathMarkdown>{followUpResponse}</MathMarkdown></div>}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowFollowUpDialog(false)}>Cancel</Button>
+              <Button onClick={handleFollowUpSubmit} disabled={followUpLoading}>Submit</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {showPreviewDialog && <BulkItemPreviewDialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog} item={previewItem} onClose={() => setShowPreviewDialog(false)} />}
+        
+        {showKeyboardShortcuts && <KeyboardShortcuts open={showKeyboardShortcuts} onOpenChange={setShowKeyboardShortcuts} />}
+      </div>
+    </EnhancedLayout>
   );
 };
 

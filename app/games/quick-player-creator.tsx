@@ -81,17 +81,19 @@ export function QuickPlayerCreator({ onCreatePlayer, onCreateMultiple }: QuickPl
     if (!playerName.trim()) return;
 
     const template = PLAYER_TEMPLATES[selectedTemplate];
+    const overallRating = Math.round(((template.pace || 50) + (template.shooting || 50) + (template.passing || 50) + (template.dribbling || 50) + (template.defending || 50) + (template.physical || 50)) / 6);
     const player: Player = {
       id: Date.now().toString(),
       name: playerName.trim(),
       position: template.position,
-      pace: template.pace,
-      shooting: template.shooting,
-      passing: template.passing,
-      dribbling: template.dribbling,
-      defending: template.defending,
-      physical: template.physical,
-      overallRating: Math.round((template.pace + template.shooting + template.passing + template.dribbling + template.defending + template.physical) / 6),
+      pace: template.pace || 50,
+      shooting: template.shooting || 50,
+      passing: template.passing || 50,
+      dribbling: template.dribbling || 50,
+      defending: template.defending || 50,
+      physical: template.physical || 50,
+      overall: overallRating,
+      overallRating: overallRating,
       goals: 0,
       assists: 0,
       appearances: 0,
