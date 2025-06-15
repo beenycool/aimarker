@@ -50,7 +50,7 @@ export const generateCacheKey = (
   for (let i = 0; i < content.length; i++) {
     const char = content.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash = hash & 0xFFFFFFFF; // Convert to 32-bit integer
   }
   return `api_${Math.abs(hash)}`;
 };
