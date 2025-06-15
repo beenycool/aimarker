@@ -66,7 +66,7 @@ export const AI_MODELS = [
 export const FALLBACK_MODELS = {
   "gemini-2.5-flash-preview-05-20": "deepseek/deepseek-r1-0528:free",
   "deepseek/deepseek-chat-v3-0324:free": "deepseek/deepseek-r1-0528:free",
-  "deepseek/deepseek-r1-0528:free": "gemini-2.5-flash-preview-05-20",
+  // "deepseek/deepseek-r1-0528:free": "gemini-2.5-flash-preview-05-20", // Removed to break the cycle
   "o3": "gemini-2.5-flash-preview-05-20",
   "o4-mini": "deepseek/deepseek-r1-0528:free",
   "xai/grok-3": "deepseek/deepseek-r1-0528:free",
