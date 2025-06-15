@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from './button';
 import { Badge } from './badge';
 import { Card, CardContent } from './card';
-import { CheckCircle, Zap, Users, BarChart3, Sparkles, ArrowRight } from 'lucide-react';
+import { CheckCircle, Zap, Users, BarChart3, Sparkles, ArrowRight, Shield } from 'lucide-react';
 import { 
   ScrollReveal, 
   MotionDiv, 
@@ -48,19 +48,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-background via-background to-muted/20">
-      {/* Animated Background */}
-      <Parallax offset={30} className="absolute inset-0">
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
-        <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent" />
-      </Parallax>
-      
-      {/* Floating Elements */}
-      <FloatingElement duration={4} yOffset={15} className="absolute top-20 left-10 opacity-50">
-        <div className="w-4 h-4 bg-primary/20 rounded-full blur-sm" />
-      </FloatingElement>
-      <FloatingElement duration={5} yOffset={20} className="absolute top-32 right-20 opacity-30">
-        <div className="w-6 h-6 bg-primary/30 rounded-full blur-sm" />
-      </FloatingElement>
+      {/* Static Background - More performant */}
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
+      <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent" />
       
       <div className="relative container mx-auto px-4 py-16 sm:py-24">
         <MotionDiv 
@@ -69,17 +59,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
           animate="animate"
           className="text-center space-y-8"
         >
-          {/* Badge with animation */}
+          {/* Static Badge - More performant */}
           <ScrollReveal animation="fadeInDown" delay={0.2}>
-            <Badge variant="secondary" className="text-sm font-medium relative overflow-hidden">
-              <MotionDiv
-                animate={{ x: [-100, 100] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-              />
-              <Sparkles className="w-4 h-4 mr-2" />
-              Version 2.2.0 - Now with Advanced AI Models
-            </Badge>
+            <div className="flex flex-col sm:flex-row gap-2 items-center justify-center">
+              <Badge variant="secondary" className="text-sm font-medium">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Version 2.2.0 - Now with Advanced AI Models
+              </Badge>
+              <Badge variant="outline" className="text-sm font-medium border-green-500 text-green-700">
+                <Shield className="w-4 h-4 mr-2" />
+                GDPR Compliant
+              </Badge>
+            </div>
           </ScrollReveal>
           
           {/* Main heading with typing effect */}
@@ -111,33 +102,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
           {/* Action buttons with magnetic effect */}
           <ScrollReveal animation="fadeInUp" delay={1.2}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <MagneticButton>
-                <Button 
-                  onClick={onGetStarted}
-                  size="lg" 
-                  className="text-lg px-8 py-3 h-auto font-semibold relative overflow-hidden group"
-                >
-                  <span className="relative z-10 flex items-center">
-                    Start Marking Now
-                    <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-                  </span>
-                  <MotionDiv
-                    className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                </Button>
-              </MagneticButton>
+              <Button 
+                onClick={onGetStarted}
+                variant="outline" 
+                size="lg" 
+                className="text-lg px-8 py-3 h-auto hover:bg-muted/50 transition-colors duration-200"
+              >
+                Start Marking Now
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+              </Button>
               
-              <MagneticButton>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="text-lg px-8 py-3 h-auto hover:bg-muted/50 transition-all duration-300"
-                >
-                  View Examples
-                </Button>
-              </MagneticButton>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="text-lg px-8 py-3 h-auto hover:bg-muted/50 transition-colors duration-200"
+              >
+                View Examples
+              </Button>
             </div>
           </ScrollReveal>
         </MotionDiv>
@@ -149,43 +130,25 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
             </h2>
           </ScrollReveal>
           
-          <MotionDiv
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <MotionDiv
-                key={index}
-                variants={fadeInUp}
-                whileHover={{ 
-                  y: -10,
-                  transition: { duration: 0.3, ease: "easeOut" }
-                }}
-                className="group"
-              >
-                <Card className="border-0 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300 hover:shadow-xl">
+              <ScrollReveal key={index} animation="fadeInUp" delay={0.1 * index}>
+                <Card className="border-0 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors duration-200 hover:shadow-lg group">
                   <CardContent className="p-6 text-center space-y-4">
-                    <MotionDiv
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      transition={{ duration: 0.3 }}
-                      className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 group-hover:text-primary/90"
-                    >
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors duration-200">
                       {feature.icon}
-                    </MotionDiv>
-                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                    </div>
+                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors duration-200">
                       {feature.title}
                     </h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed group-hover:text-foreground/80 transition-colors">
+                    <p className="text-muted-foreground text-sm leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">
                       {feature.description}
                     </p>
                   </CardContent>
                 </Card>
-              </MotionDiv>
+              </ScrollReveal>
             ))}
-          </MotionDiv>
+          </div>
         </div>
 
         {/* Statistics Section */}

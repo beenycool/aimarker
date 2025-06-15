@@ -391,6 +391,71 @@ router.post('/gemini/generate', globalRateLimiter, moderateUserInput, async (req
   }
 });
 
+// Document upload and text extraction endpoint
+router.post('/documents/extract', globalRateLimiter, async (req, res) => {
+  try {
+    const { fileData, fileName, fileType } = req.body;
+    
+    if (!fileData || !fileName || !fileType) {
+      return res.status(400).json({ error: 'Missing required fields: fileData, fileName, fileType' });
+    }
+
+    let extractedText = '';
+
+    // Handle different file types
+    if (fileType === 'text/plain') {
+      // For text files, decode base64 and return content
+      const buffer = Buffer.from(fileData.split(',')[1], 'base64');
+      extractedText = buffer.toString('utf-8');
+    } else if (fileType === 'application/pdf') {
+      try {
+        const pdfParse = require('pdf-parse');
+        const buffer = Buffer.from(fileData.split(',')[1], 'base64');
+        const pdfData = await pdfParse(buffer);
+        extractedText = pdfData.text;
+      } catch (pdfError) {
+        console.error('PDF parsing error:', pdfError);
+        extractedText = `[PDF content from ${fileName}] - Error extracting text: ${pdfError.message}`;
+      }
+    } else if (fileType.startsWith('image/')) {
+      try {
+        const Tesseract = require('tesseract.js');
+        const buffer = Buffer.from(fileData.split(',')[1], 'base64');
+        const { data: { text } } = await Tesseract.recognize(buffer, 'eng', {
+          logger: m => console.log(m)
+        });
+        extractedText = text;
+      } catch (ocrError) {
+        console.error('OCR error:', ocrError);
+        extractedText = `[Image OCR from ${fileName}] - Error extracting text: ${ocrError.message}`;
+      }
+    } else if (fileType.includes('word') || fileType.includes('document')) {
+      try {
+        const mammoth = require('mammoth');
+        const buffer = Buffer.from(fileData.split(',')[1], 'base64');
+        const result = await mammoth.extractRawText({ buffer });
+        extractedText = result.value;
+      } catch (wordError) {
+        console.error('Word document parsing error:', wordError);
+        extractedText = `[Word document content from ${fileName}] - Error extracting text: ${wordError.message}`;
+      }
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type for text extraction' });
+    }
+
+    res.json({
+      success: true,
+      extractedText,
+      fileName,
+      fileType
+    });
+
+  } catch (error) {
+    console.error('Document extraction error:', error);
+    res.status(500).json({ error: 'Failed to extract text from document' });
+  }
+});
+
 // Route for Gemini API Streaming
 router.post('/gemini/stream', globalRateLimiter, moderateUserInput, async (req, res) => {
   try {

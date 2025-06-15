@@ -1,6 +1,6 @@
 "use client";
 import * as React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import 'katex/dist/katex.min.css';
 import { getSubjectGuidance } from "@/lib/utils";
@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
-import { Loader2, Upload, AlertTriangle, HelpCircle, ChevronRight, X, Keyboard, Pause, RefreshCw } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, HelpCircle, ChevronRight, ChevronDown, X, Keyboard, Pause, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import debounce from 'lodash.debounce';
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { Label } from "@/components/ui/label";
@@ -39,7 +41,9 @@ import {
   QUESTION_TYPES,
   LOCALSTORAGE_KEYS,
   HISTORY_LIMIT,
-  subjectKeywords
+  subjectKeywords,
+  EXAM_PRESETS,
+  SUBJECT_KEYWORDS_OPTIMIZED
 } from './aimarker/constants';
 import {
   detectTotalMarksFromQuestion,
@@ -60,10 +64,13 @@ import {
   FeedbackDisplay,
   MathMarkdown
 } from './aimarker/components';
+import { QuickActions } from './aimarker/components/QuickActions';
+import { DocumentUpload } from './aimarker/components/DocumentUpload';
 
 // Enhanced layout components
 import { EnhancedLayout } from './aimarker/enhanced-layout';
 import { SampleQuestions } from '@/components/ui/sample-questions';
+import { Header } from '@/components/header';
 
 // Refactored Welcome Screen Components
 import { Hero } from './aimarker/components/Hero';
@@ -118,7 +125,7 @@ const AIMarker = () => {
   const [relevantMaterialImage, setRelevantMaterialImage] = useState(null);
   const [relevantMaterialImageBase64, setRelevantMaterialImageBase64] = useState(null);
   const [relevantMaterialImageLoading, setRelevantMaterialImageLoading] = useState(false);
-  const [modelThinking, setModelThinking] = useState([]);
+  const [modelThinking, setModelThinking] = useState<any[]>([]);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [tier, setTier] = useState("higher");
   const [achievedMarks, setAchievedMarks] = useState<number | null>(null);
@@ -154,10 +161,10 @@ const AIMarker = () => {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [detectedSubject, setDetectedSubject] = useState<string | null>(null);
   const [shortcutFeedback, setShortcutFeedback] = useState<string | null>(null);
-  const [processingProgress, setProcessingProgress] = useState<number>(0);
+  const [processingProgress, setProcessingProgress] = useState<string>("");
   const [history, setHistory] = useState<any[]>([]);
   const [lastRequestTime, setLastRequestTime] = useState(0);
-  const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat-v3-0324:free");
+  const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat-v3");
   const [modelLastRequestTimes, setModelLastRequestTimes] = useState<{[key: string]: number}>({});
   const [backendStatus, setBackendStatus] = useState('checking');
   const currentModelForRequestRef = useRef<string | null>(null);
@@ -170,6 +177,133 @@ const AIMarker = () => {
   const { checkBackendStatus } = useBackendStatus(getApiBaseUrl());
   const { debouncedClassifySubject } = useSubjectDetection(subjectKeywords, loading, hasManuallySetSubject, allSubjects, setSubject, setDetectedSubject, setSuccess);
 
+  // Performance optimizations: Memoized computations
+  const memoizedSubjects = useMemo(() => allSubjects, [allSubjects]);
+  const memoizedExamBoards = useMemo(() => EXAM_BOARDS, []);
+  const memoizedUserTypes = useMemo(() => USER_TYPES, []);
+  const memoizedAiModels = useMemo(() => AI_MODELS, []);
+  
+  // Memoized preset options for better performance
+  const memoizedPresetOptions = useMemo(() => {
+    return Object.entries(EXAM_PRESETS).map(([key, preset]) => ({
+      key,
+      value: key,
+      label: preset.name,
+      description: preset.description,
+      preset
+    }));
+  }, []);
+
+  // Optimized subject detection using Map lookup
+  const optimizedSubjectDetection = useCallback((text: string) => {
+    const words = text.toLowerCase().split(/\s+/);
+    const subjectScores = new Map();
+    
+    for (const [subject, keywords] of SUBJECT_KEYWORDS_OPTIMIZED) {
+      let score = 0;
+      for (const word of words) {
+        if (keywords.has(word)) {
+          score++;
+        }
+      }
+      if (score > 0) {
+        subjectScores.set(subject, score);
+      }
+    }
+    
+    if (subjectScores.size === 0) return null;
+    
+    // Return subject with highest score
+    return Array.from(subjectScores.entries())
+      .sort(([,a], [,b]) => b - a)[0][0];
+  }, []);
+
+  // These will be defined after the function definitions
+
+  // Handler for applying presets from QuickActions
+  const handleApplyPreset = useCallback((preset: {
+    subject: string;
+    examBoard: string;
+    questionType: string;
+    totalMarks: string;
+    markScheme?: string;
+    name: string;
+  }) => {
+    setSubject(preset.subject);
+    setExamBoard(preset.examBoard);
+    setQuestionType(preset.questionType);
+    setTotalMarks(preset.totalMarks);
+    if (preset.markScheme) {
+      setMarkScheme(preset.markScheme);
+    }
+    hasManuallySetSubject.current = true;
+    setDetectedSubject(null);
+  }, []);
+
+  // Handler for generating mark scheme using Gemini 2.0 Flash
+  const handleGenerateMarkScheme = useCallback(async () => {
+    if (!question.trim()) {
+      toast.error('Please enter a question first');
+      return;
+    }
+
+    setLoading(true);
+    setProcessingProgress("Generating mark scheme...");
+
+    try {
+      const systemPrompt = `You are an expert GCSE examiner. Generate a detailed mark scheme for the following question. Include:
+1. Assessment objectives (AOs) if applicable
+2. Level descriptors with mark ranges
+3. Specific marking criteria
+4. Example responses or key points to look for
+
+Subject: ${subject}
+Exam Board: ${examBoard}
+Total Marks: ${totalMarks || 'Not specified'}`;
+
+      const userPrompt = `Generate a comprehensive mark scheme for this GCSE question:\n\n${question}`;
+
+      const response = await fetch(constructApiUrl('chat/completions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'google/gemini-2.0-flash-exp:free',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          stream: false
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const generatedMarkScheme = data.choices?.[0]?.message?.content || '';
+      
+      if (generatedMarkScheme) {
+        setMarkScheme(generatedMarkScheme);
+        toast.success('Mark scheme generated successfully');
+      } else {
+        throw new Error('No mark scheme generated');
+      }
+    } catch (error) {
+      console.error('Error generating mark scheme:', error);
+      toast.error('Failed to generate mark scheme. Please try again.');
+    } finally {
+      setLoading(false);
+      setProcessingProgress("");
+    }
+  }, [question, subject, examBoard, totalMarks]);
+
+  // Advanced options state
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [automaticMaxTokens, setAutomaticMaxTokens] = useState(true);
+  const [enableThinkingBudget, setEnableThinkingBudget] = useState(true);
+  const [thinkingBudget, setThinkingBudget] = useState([1024]);
+  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
 
   const setCurrentModelForRequest = (model: string) => {
     currentModelForRequestRef.current = model;
@@ -274,6 +408,16 @@ const AIMarker = () => {
         return prompt;
     };
 
+  // Memoized system prompt builder
+  const memoizedSystemPrompt = useMemo(() => {
+    return buildSystemPrompt();
+  }, [subject, examBoard, questionType, userType, markScheme, totalMarks, textExtract, relevantMaterial, enableGradeBoundaries, gradeBoundaries, tier]);
+
+  // Memoized user prompt builder
+  const memoizedUserPrompt = useMemo(() => {
+    return buildUserPrompt();
+  }, [question, answer, totalMarks, relevantMaterialImageBase64]);
+
   const handleSubmitForMarking = useCallback(async () => {
     setFeedback("");
     setGrade("");
@@ -290,11 +434,11 @@ const AIMarker = () => {
     setLoading(true);
     setActiveTab("feedback");
 
-    const effectiveModel = TASK_SPECIFIC_MODELS.subject_assessment[subject] || selectedModel;
+    const effectiveModel = TASK_SPECIFIC_MODELS.subject_assessment[subject as keyof typeof TASK_SPECIFIC_MODELS.subject_assessment] || selectedModel;
     setCurrentModelForRequest(effectiveModel);
 
     const now = Date.now();
-    const modelRateLimit = MODEL_RATE_LIMITS[effectiveModel] || 10000;
+    const modelRateLimit = MODEL_RATE_LIMITS[effectiveModel as keyof typeof MODEL_RATE_LIMITS] || 10000;
     const lastRequest = modelLastRequestTimes[effectiveModel] || 0;
 
     if (now - lastRequest < modelRateLimit) {
@@ -316,6 +460,8 @@ const AIMarker = () => {
         });
 
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+
+        if (!response.body) throw new Error('Response body is null');
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -370,7 +516,7 @@ const AIMarker = () => {
                 const achieved = parseInt(marksMatch[1], 10);
                 const total = parseInt(marksMatch[2], 10);
                 setAchievedMarks(achieved);
-                if(!totalMarks) setTotalMarks(total);
+                if(!totalMarks) setTotalMarks(total.toString());
 
                 if(enableGradeBoundaries) {
                     const calculated = calculateGradeFromBoundaries(achieved, total, gradeBoundaries);
@@ -400,6 +546,7 @@ const AIMarker = () => {
     setAchievedMarks(null);
     setError(null);
     setSuccess(null);
+    setUploadedDocuments([]);
     localStorage.removeItem(LOCALSTORAGE_KEYS.QUESTION);
     localStorage.removeItem(LOCALSTORAGE_KEYS.ANSWER);
     toast.success("Form has been reset.");
@@ -409,6 +556,21 @@ const AIMarker = () => {
     setShowWelcome(false);
     setHasInteracted(true);
   };
+
+  const handleDocumentExtracted = useCallback((text: string, filename: string) => {
+    // Add extracted text to the answer field or relevant material
+    if (answer.trim()) {
+      setAnswer(prev => prev + `\n\n[From ${filename}]\n${text}`);
+    } else {
+      setAnswer(text);
+    }
+    toast.success(`Text extracted from ${filename} and added to answer`);
+  }, [answer]);
+
+  const handleDocumentUploaded = useCallback((document: any) => {
+    setUploadedDocuments(prev => [...prev, document]);
+    toast.success(`Document ${document.name} uploaded successfully`);
+  }, []);
 
   const handleUseSample = (sample: any) => {
     setQuestion(sample.question);
@@ -510,7 +672,7 @@ const AIMarker = () => {
       } catch (error) {
         return {
           ...item,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           processed: true
         };
       }
@@ -520,7 +682,7 @@ const AIMarker = () => {
       const promises = items.map(processItem);
       const results = await Promise.all(promises);
       
-      setBulkResults(prev => [...prev, ...results.filter(r => r !== null)]);
+      setBulkResults(prev => [...prev, ...results.filter(r => r !== null)] as any);
       setBulkProgress(prev => ({ ...prev, processed: prev.processed + results.length }));
     };
 
@@ -547,19 +709,21 @@ const AIMarker = () => {
 
   useHotkeys('ctrl+k, cmd+k', (e) => { e.preventDefault(); setShowKeyboardShortcuts(true); }, { enableOnTags: ['INPUT', 'TEXTAREA', 'SELECT'] });
   useHotkeys('alt+h, opt+h', (e) => { e.preventDefault(); setShowGuide(prev => !prev); });
-  useHotkeys('ctrl+enter, cmd+enter', (e) => { e.preventDefault(); handleSubmitForMarking(); }, { enableOnTags: ['INPUT', 'TEXTAREA'] });
+  useHotkeys('ctrl+enter, cmd+enter', (e) => { e.preventDefault(); handleSubmitForMarking(); });
   useHotkeys('alt+r, opt+r', (e) => { e.preventDefault(); resetForm(); });
 
   if (showWelcome) {
     return (
-      <div className="bg-background min-h-screen">
-        <header className="py-4 px-6 flex justify-between items-center">
-          <h1 className="text-xl font-bold">AI GCSE Marker</h1>
-        </header>
+      <div className="bg-black min-h-screen">
+        <Header />
         <Hero handleGetStarted={handleGetStarted} />
         <Features />
         <HowItWorks />
-        <SampleQuestions onUseSample={handleUseSample} />
+        <section className="relative py-24 overflow-hidden bg-black">
+          <div className="container-custom relative z-10" id="sample-questions">
+            <SampleQuestions onUseSample={handleUseSample} />
+          </div>
+        </section>
         <CTA handleGetStarted={handleGetStarted} />
         <Stats />
       </div>
@@ -567,305 +731,355 @@ const AIMarker = () => {
   }
 
   return (
-    <EnhancedLayout>
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
-        <header className="border-b bg-background shadow-sm">
-          <BackendStatusChecker onStatusChange={handleBackendStatusChange} getAPI_BASE_URL={getApiBaseUrl} />
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold text-foreground">AI GCSE Marker</h1>
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      <BackendStatusChecker onStatusChange={handleBackendStatusChange} getAPI_BASE_URL={getApiBaseUrl} />
+      {isClient && showGuide && <QuickGuide onClose={() => setShowGuide(false)} />}
+      
+      {/* Header */}
+      <div className="bg-gray-900/50 border-b border-gray-800">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold">AI GCSE Marker</h1>
+                <Badge variant="outline" className="text-xs">v2.1.3</Badge>
+              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>API Connected</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 bg-gray-700 rounded flex items-center justify-center">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                    </div>
+                    <span>500 requests left</span>
+                  </div>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={() => setShowKeyboardShortcuts(true)}>
+                      <Keyboard className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Keyboard shortcuts</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={() => setShowGuide(true)}>
+                      <HelpCircle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Help</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
-        </header>
-        {isClient && showGuide && <QuickGuide onClose={() => setShowGuide(false)} />}
-        <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
-          <EnhancedAlert error={error} success={success} onRetry={handleSubmitForMarking} />
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="answer">Answer</TabsTrigger>
-              <TabsTrigger value="feedback">Feedback</TabsTrigger>
-              <TabsTrigger value="bulk">
-                Bulk Mark
-                <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Beta</Badge>
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="answer" className="mt-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Main Content - Question & Answer */}
-                <div className="lg:col-span-2 space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Question & Answer</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="question">Question</Label>
-                        <Textarea
-                          id="question"
-                          placeholder="Enter the question here..."
-                          value={question}
-                          onChange={(e) => {
-                            setQuestion(e.target.value);
-                            const detected = detectTotalMarksFromQuestion(e.target.value);
-                            if (detected && !totalMarks) {
-                              setTotalMarks(detected.toString());
-                            }
-                          }}
-                          className="min-h-[120px]"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="answer">Student's Answer</Label>
-                        <Textarea
-                          id="answer"
-                          placeholder="Enter your answer here..."
-                          value={answer}
-                          onChange={(e) => setAnswer(e.target.value)}
-                          rows={10}
-                          className="min-h-[200px]"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+        </div>
+      </div>
 
-                  {/* Additional Materials */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Additional Materials</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="markScheme">Mark Scheme (Optional)</Label>
+      <main className="flex-grow container mx-auto p-6 max-w-5xl">
+        <EnhancedAlert error={error} success={success} onRetryAction={handleSubmitForMarking} />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="answer">Answer</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
+            <TabsTrigger value="bulk">
+              Bulk Mark
+              <Badge variant="outline" className="ml-2 text-xs">Very Beta</Badge>
+            </TabsTrigger>
+          </TabsList>
+                      <TabsContent value="answer" className="mt-6">
+            <div className="space-y-6">
+                {/* Preset Selector */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Quick Presets</Label>
+                  <Select onValueChange={(value) => {
+                    if (value) {
+                      const presetOption = memoizedPresetOptions.find(opt => opt.value === value);
+                      if (presetOption) {
+                        const preset = presetOption.preset;
+                        setSubject(preset.subject);
+                        setExamBoard(preset.examBoard);
+                        setQuestionType(preset.questionType);
+                        setTotalMarks(preset.totalMarks);
+                        if ('markScheme' in preset && preset.markScheme) {
+                          setMarkScheme(preset.markScheme);
+                        }
+                        toast.success(`Applied preset: ${preset.name}`);
+                      }
+                    }
+                  }}>
+                    <SelectTrigger className="bg-gray-800/50 border-gray-700">
+                      <SelectValue placeholder="Choose a preset or configure manually" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      {memoizedPresetOptions.map((option) => (
+                        <SelectItem key={option.key} value={option.value} className="hover:bg-gray-700">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{option.label}</span>
+                            <span className="text-xs text-gray-400">{option.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Quick Actions */}
+                <QuickActions 
+                  onApplyPreset={handleApplyPreset}
+                  currentConfig={{
+                    subject,
+                    examBoard,
+                    questionType,
+                    totalMarks,
+                    markScheme,
+                    userType,
+                    tier
+                  }}
+                  isLoggedIn={false} // TODO: Replace with actual auth state
+                  onLoginRequired={() => toast.info('Please login to save personal configurations')}
+                />
+
+                {/* Question Input */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="question" className="text-sm font-medium">Question</Label>
+                    <span className="text-xs text-destructive">(Required)</span>
+                    <Badge variant="outline" className="text-xs">GCSE Level</Badge>
+                  </div>
+                  <Textarea
+                    id="question"
+                    placeholder="Enter the question here..."
+                    value={question}
+                    onChange={(e) => {
+                      setQuestion(e.target.value);
+                      const detected = detectTotalMarksFromQuestion(e.target.value);
+                      if (detected && !totalMarks) {
+                        setTotalMarks(detected.toString());
+                      }
+                    }}
+                    className="min-h-[140px] resize-none p-4"
+                  />
+                </div>
+
+                {/* Answer Input */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="answer" className="text-sm font-medium">Your Answer</Label>
+                      <span className="text-xs text-destructive">(Required)</span>
+                    </div>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Upload Image
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="answer"
+                    placeholder="Enter your answer here..."
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    className="min-h-[220px] resize-none p-4"
+                  />
+                </div>
+
+                {/* Document Upload */}
+                <DocumentUpload
+                  onDocumentExtracted={handleDocumentExtracted}
+                  onDocumentUploaded={handleDocumentUploaded}
+                  maxFileSize={10}
+                  acceptedTypes={['.pdf', '.doc', '.docx', '.txt', '.rtf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff']}
+                />
+
+                              {/* Form Controls Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Subject</Label>
+                      <Button variant="ghost" size="sm" className="p-0 h-auto text-xs text-muted-foreground hover:text-foreground">
+                        <HelpCircle className="h-3 w-3 mr-1" />
+                        View Guidance
+                      </Button>
+                    </div>
+                    <Select value={subject} onValueChange={(value) => {
+                      setSubject(value);
+                      hasManuallySetSubject.current = true;
+                      setDetectedSubject(null);
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {memoizedSubjects.map((subj) => (
+                          <SelectItem key={subj.value} value={subj.value}>
+                            {subj.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Exam Board</Label>
+                    <Select value={examBoard} onValueChange={setExamBoard}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select exam board" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {memoizedExamBoards.map((board) => (
+                          <SelectItem key={board.value} value={board.value}>
+                            {board.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">I am a</Label>
+                    <Select value={userType} onValueChange={setUserType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select user type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {memoizedUserTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Advanced Options */}
+                <div className="space-y-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    {showAdvancedOptions ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Advanced Options
+                  </Button>
+                  
+                  {showAdvancedOptions && (
+                    <div className="space-y-6 pl-8 border-l-2 border-gray-700 mt-4">
+                      {/* Mark Scheme */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm font-medium">Mark Scheme</Label>
+                            <span className="text-xs text-muted-foreground">(Optional)</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Adding a mark scheme will enhance feedback with detailed criteria analysis
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleGenerateMarkScheme}
+                            disabled={loading || !question.trim()}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Generate
+                          </Button>
+                        </div>
                         <Textarea
-                          id="markScheme"
                           placeholder="Enter the mark scheme here..."
                           value={markScheme}
                           onChange={(e) => setMarkScheme(e.target.value)}
-                          rows={4}
+                          className="min-h-[100px] resize-none"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="textExtract">Text Extract (Optional)</Label>
-                        <Textarea
-                          id="textExtract"
-                          placeholder="Enter any relevant text extract here..."
-                          value={textExtract}
-                          onChange={(e) => setTextExtract(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="relevantMaterial">Other Relevant Material (Optional)</Label>
-                        <Textarea
-                          id="relevantMaterial"
-                          placeholder="Enter any other relevant material here..."
-                          value={relevantMaterial}
-                          onChange={(e) => setRelevantMaterial(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="image">Upload Image</Label>
+
+                      {/* Total Marks */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Total Marks <span className="text-xs text-muted-foreground">(Optional)</span></Label>
                         <Input
-                          id="image"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              setImage(file);
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setRelevantMaterialImageBase64(event.target.result);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        {image && (
-                          <div className="mt-2">
-                            <img
-                              src={URL.createObjectURL(image)}
-                              alt="Uploaded"
-                              className="max-w-full h-32 object-contain border rounded"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Settings Sidebar */}
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Assessment Settings</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="subject">Subject</Label>
-                        <div className="flex gap-2">
-                          <Select value={subject} onValueChange={(value) => {
-                            setSubject(value);
-                            hasManuallySetSubject.current = true;
-                            setDetectedSubject(null);
-                          }}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select subject" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(allSubjects || []).map((subj) => (
-                                <SelectItem key={subj.value} value={subj.value}>
-                                  {subj.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setIsAddingSubject(!isAddingSubject)}
-                          >
-                            +
-                          </Button>
-                        </div>
-                        {detectedSubject && (
-                          <Badge variant="secondary" className="mt-1">
-                            Auto-detected: {detectedSubject}
-                          </Badge>
-                        )}
-                        {isAddingSubject && (
-                          <div className="mt-2 flex gap-2">
-                            <Input
-                              ref={customSubjectInputRef}
-                              placeholder="Custom subject"
-                              value={customSubject}
-                              onChange={(e) => setCustomSubject(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  const newSubject = {
-                                    value: customSubject.toLowerCase().replace(/\s+/g, '_'),
-                                    label: customSubject
-                                  };
-                                  setAllSubjects([...allSubjects, newSubject]);
-                                  setSubject(newSubject.value);
-                                  setCustomSubject("");
-                                  setIsAddingSubject(false);
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                const newSubject = {
-                                  value: customSubject.toLowerCase().replace(/\s+/g, '_'),
-                                  label: customSubject
-                                };
-                                setAllSubjects([...allSubjects, newSubject]);
-                                setSubject(newSubject.value);
-                                setCustomSubject("");
-                                setIsAddingSubject(false);
-                              }}
-                            >
-                              Add
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="examBoard">Exam Board</Label>
-                        <Select value={examBoard} onValueChange={setExamBoard}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select exam board" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {EXAM_BOARDS.map((board) => (
-                              <SelectItem key={board.value} value={board.value}>
-                                {board.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="userType">User Type</Label>
-                        <Select value={userType} onValueChange={setUserType}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select user type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {USER_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {allSubjects.find(s => s.value === subject)?.hasTiers && (
-                        <div>
-                          <Label htmlFor="tier">Tier</Label>
-                          <Select value={tier} onValueChange={setTier}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select tier" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="foundation">Foundation</SelectItem>
-                              <SelectItem value="higher">Higher</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      <div>
-                        <Label htmlFor="questionType">Question Type</Label>
-                        <Select value={questionType} onValueChange={setQuestionType}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select question type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="general">General Assessment</SelectItem>
-                            {(QUESTION_TYPES[subject as keyof typeof QUESTION_TYPES]?.[examBoard as keyof typeof QUESTION_TYPES[keyof typeof QUESTION_TYPES]] || []).map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="totalMarks">Total Marks</Label>
-                        <Input
-                          id="totalMarks"
                           type="number"
-                          placeholder="e.g., 20"
+                          placeholder="Enter total marks"
                           value={totalMarks}
                           onChange={(e) => setTotalMarks(e.target.value)}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          If not provided, system will attempt to detect total marks from the question (like "8 marks" or "[Total: 10]").
+                        </p>
                       </div>
 
-                      <div>
-                        <Label htmlFor="model">AI Model</Label>
+                      {/* Text Extract */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Text Extract <span className="text-xs text-muted-foreground">(Optional)</span></Label>
+                        <Textarea
+                          placeholder="Enter any relevant text extract here..."
+                          value={textExtract}
+                          onChange={(e) => setTextExtract(e.target.value)}
+                          className="min-h-[80px] resize-none"
+                        />
+                      </div>
+
+                      {/* Relevant Material */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Relevant Material <span className="text-xs text-muted-foreground">(Optional)</span></Label>
+                        <Textarea
+                          placeholder="Enter any other relevant material here..."
+                          value={relevantMaterial}
+                          onChange={(e) => setRelevantMaterial(e.target.value)}
+                          className="min-h-[80px] resize-none"
+                        />
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Add image as relevant material</span>
+                          <Button variant="outline" size="sm">
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload Image
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* AI Model */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">AI Model <span className="text-xs text-muted-foreground">(Optional)</span></Label>
                         <Select value={selectedModel} onValueChange={setSelectedModel}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select AI model" />
                           </SelectTrigger>
                           <SelectContent>
-                            {AI_MODELS.map((model) => (
-                              <SelectGroup key={model.category}>
-                                <SelectLabel>{model.category}</SelectLabel>
-                                {model.models.map((m) => (
-                                  <SelectItem key={m.value} value={m.value}>
-                                    <div className="flex items-center gap-2">
-                                      {m.label}
-                                      {m.badge && (
+                            {memoizedAiModels.map((category) => (
+                              <SelectGroup key={category.category}>
+                                <SelectLabel className="text-xs font-medium text-gray-400">
+                                  {category.category}
+                                </SelectLabel>
+                                {category.models.map((model) => (
+                                  <SelectItem 
+                                    key={model.value} 
+                                    value={model.value}
+                                    disabled={model.tier === 'premium' && !false} // TODO: Replace with actual premium status
+                                    className={model.tier === 'premium' && !false ? 'opacity-50 cursor-not-allowed' : ''}
+                                  >
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex items-center gap-2">
+                                        <span>{model.label}</span>
                                         <Badge variant="outline" className="text-xs">
-                                          {m.badge}
+                                          {model.badge}
                                         </Badge>
-                                      )}
+                                        {model.tier === 'premium' && (
+                                          <Badge variant="secondary" className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/50">
+                                            Premium
+                                          </Badge>
+                                        )}
+                                      </div>
                                     </div>
                                   </SelectItem>
                                 ))}
@@ -873,78 +1087,119 @@ const AIMarker = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {selectedModel && memoizedAiModels.some(cat => 
+                          cat.models.some(model => model.value === selectedModel && model.tier === 'premium')
+                        ) && !false && ( // TODO: Replace with actual premium status
+                          <div className="bg-amber-500/10 border border-amber-500/20 rounded p-2">
+                            <p className="text-xs text-amber-400">
+                              This is a premium model. Upgrade your account to use advanced AI models.
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
 
-                  {/* Grade Boundaries */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Grade Boundaries</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="enableGradeBoundaries"
-                          checked={enableGradeBoundaries}
-                          onChange={(e) => setEnableGradeBoundaries(e.target.checked)}
+                      {/* Automatic Max Tokens */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm font-medium">Automatic Max Tokens</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Automatically sets the maximum number of tokens</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Switch
+                          checked={automaticMaxTokens}
+                          onCheckedChange={setAutomaticMaxTokens}
                         />
-                        <Label htmlFor="enableGradeBoundaries">Enable Grade Boundaries</Label>
                       </div>
-                      {enableGradeBoundaries && (
+
+                      {/* Thinking Budget - Only for Gemini 2.5 Flash */}
+                      {selectedModel === 'gemini-2.5-flash-preview-05-20' && (
                         <div className="space-y-2">
-                          {Object.entries(gradeBoundaries).sort(([a], [b]) => parseInt(b) - parseInt(a)).map(([grade, threshold]) => (
-                            <div key={grade} className="flex items-center space-x-2">
-                              <Label className="w-12">Grade {grade}:</Label>
-                              <Input
-                                type="number"
-                                value={threshold}
-                                onChange={(e) => setGradeBoundaries(prev => ({ ...prev, [grade]: parseInt(e.target.value) || 0 }))}
-                                className="w-20"
-                              />
-                              <span className="text-sm text-muted-foreground">%</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-sm font-medium">Enable Thinking Budget</Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Controls reasoning depth for Gemini 2.5 Flash</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
-                          ))}
+                            <Switch
+                              checked={enableThinkingBudget}
+                              onCheckedChange={setEnableThinkingBudget}
+                            />
+                          </div>
+                          
+                          {enableThinkingBudget && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-sm">Thinking Budget: {thinkingBudget[0]}</Label>
+                                <div className="flex items-center gap-2">
+                                  <Slider
+                                    value={thinkingBudget}
+                                    onValueChange={setThinkingBudget}
+                                    max={24576}
+                                    min={0}
+                                    step={64}
+                                    className="w-32"
+                                  />
+                                  <Input
+                                    type="number"
+                                    value={thinkingBudget[0]}
+                                    onChange={(e) => setThinkingBudget([parseInt(e.target.value) || 0])}
+                                    className="w-20"
+                                  />
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Defines the maximum tokens used for thinking. Higher values may improve quality for complex tasks. (Min: 0, Max: 24576)
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Action Buttons */}
-                  <Card>
-                    <CardContent className="pt-6 space-y-2">
-                      <Button
-                        onClick={handleSubmitForMarking}
-                        disabled={loading || !answer}
-                        className="w-full"
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          "Mark Answer"
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={resetForm}
-                        className="w-full"
-                      >
-                        Reset Form
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowGuide(true)}
-                        className="w-full"
-                      >
-                        <HelpCircle className="mr-2 h-4 w-4" />
-                        Show Guide
-                      </Button>
-                    </CardContent>
-                  </Card>
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSubmitForMarking}
+                    disabled={loading || !answer}
+                    className="flex-1"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Mark Answer
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Mark Answer
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={resetForm}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Reset Form
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -965,34 +1220,35 @@ const AIMarker = () => {
             </TabsContent>
             <TabsContent value="bulk" className="mt-4">
               <div className="space-y-4">
-                <Card>
+                <Card className="bg-gray-900/80 border-gray-800">
                   <CardHeader>
-                    <CardTitle>Bulk Marking</CardTitle>
-                    <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Beta</Badge>
+                    <CardTitle className="text-white">Bulk Marking</CardTitle>
+                    <Badge variant="outline" className="ml-2 text-amber-400 border-amber-500/50 bg-amber-500/10">Beta</Badge>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="bulkFile">Upload File (CSV, JSON, or TXT)</Label>
+                      <Label htmlFor="bulkFile" className="text-gray-300">Upload File (CSV, JSON, or TXT)</Label>
                       <Input
                         id="bulkFile"
                         type="file"
                         accept=".csv,.json,.txt"
+                        className="bg-gray-800/50 border-gray-700 text-white file:bg-gray-700 file:text-white file:border-0 file:mr-4 file:py-2 file:px-4 file:rounded-md file:text-sm hover:file:bg-gray-600"
                         onChange={(e) => {
-                          const file = e.target.files[0];
+                          const file = e.target.files?.[0];
                           setBulkFile(file);
                           if (file) {
                             // Parse the file and extract items
                             const reader = new FileReader();
                             reader.onload = (event) => {
                               try {
-                                const content = event.target.result;
+                                const content = event.target?.result;
                                 let items = [];
                                 
                                 if (file.name.endsWith('.csv')) {
-                                  const parsed = Papa.parse(content, { header: true });
-                                  items = parsed.data.filter(row => row.question && row.answer);
+                                  const parsed = Papa.parse(content as string, { header: true });
+                                  items = parsed.data.filter((row: any) => row.question && row.answer);
                                 } else if (file.name.endsWith('.json')) {
-                                  items = JSON.parse(content);
+                                  items = JSON.parse(content as string);
                                 } else if (file.name.endsWith('.txt')) {
                                   // Simple text format: question|answer per line
                                   items = content.split('\n')
@@ -1006,7 +1262,7 @@ const AIMarker = () => {
                                 setBulkItems(items);
                                 toast.success(`Loaded ${items.length} items for bulk processing`);
                               } catch (error) {
-                                toast.error(`Error parsing file: ${error.message}`);
+                                toast.error(`Error parsing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
                               }
                             };
                             reader.readAsText(file);
@@ -1019,7 +1275,7 @@ const AIMarker = () => {
                     {bulkItems.length > 0 && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-gray-400">
                             {bulkItems.length} items loaded
                           </span>
                           <Button
@@ -1031,26 +1287,27 @@ const AIMarker = () => {
                                 setShowPreviewDialog(true);
                               }
                             }}
+                            className="bg-gray-800/50 border-gray-700 text-white hover:bg-gray-700"
                           >
                             Preview First Item
                           </Button>
                         </div>
                         
                         <div>
-                          <Label htmlFor="bulkSettings">Bulk Processing Settings</Label>
+                          <Label htmlFor="bulkSettings" className="text-gray-300">Bulk Processing Settings</Label>
                           <Select value={bulkSettingPreference} onValueChange={setBulkSettingPreference}>
-                            <SelectTrigger>
+                            <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
                               <SelectValue placeholder="Select setting source" />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="global">Use Current Form Settings</SelectItem>
-                              <SelectItem value="individual">Use Individual Item Settings</SelectItem>
+                            <SelectContent className="bg-gray-800 border-gray-700">
+                              <SelectItem value="global" className="text-white hover:bg-gray-700">Use Current Form Settings</SelectItem>
+                              <SelectItem value="individual" className="text-white hover:bg-gray-700">Use Individual Item Settings</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         
                         <div>
-                          <Label htmlFor="parallelism">Parallel Processing (1-5)</Label>
+                          <Label htmlFor="parallelism" className="text-gray-300">Parallel Processing (1-5)</Label>
                           <Input
                             id="parallelism"
                             type="number"
@@ -1058,13 +1315,14 @@ const AIMarker = () => {
                             max="5"
                             value={parallelProcessing}
                             onChange={(e) => setParallelProcessing(parseInt(e.target.value) || 1)}
+                            className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-gray-600"
                           />
                         </div>
                         
                         <Button
                           onClick={handleBulkProcess}
                           disabled={bulkProcessing || bulkItems.length === 0}
-                          className="w-full"
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0"
                         >
                           {bulkProcessing ? (
                             <>
@@ -1081,9 +1339,9 @@ const AIMarker = () => {
                 </Card>
                 
                 {bulkProcessing && (
-                  <Card>
+                  <Card className="bg-gray-900/80 border-gray-800">
                     <CardHeader>
-                      <CardTitle>Processing Status</CardTitle>
+                      <CardTitle className="text-white">Processing Status</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <BatchProcessingControls
@@ -1110,38 +1368,38 @@ const AIMarker = () => {
                 )}
                 
                 {bulkResults.length > 0 && (
-                  <Card>
+                  <Card className="bg-gray-900/80 border-gray-800">
                     <CardHeader>
-                      <CardTitle>Results ({bulkResults.length})</CardTitle>
+                      <CardTitle className="text-white">Results ({bulkResults.length})</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2 max-h-96 overflow-y-auto">
                         {bulkResults.map((item, index) => (
                           <div
                             key={index}
-                            className="p-3 border rounded cursor-pointer hover:bg-muted/50"
+                            className="p-3 border border-gray-700 rounded cursor-pointer hover:bg-gray-800/50 bg-gray-800/30"
                             onClick={() => {
                               setPreviewItem(item);
                               setShowPreviewDialog(true);
                             }}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium">Item {index + 1}</span>
+                              <span className="font-medium text-white">Item {index + 1}</span>
                               <div className="flex items-center gap-2">
                                 {item.grade && (
-                                  <Badge variant="secondary">Grade {item.grade}</Badge>
+                                  <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">Grade {item.grade}</Badge>
                                 )}
                                 {item.achievedMarks && item.totalMarks && (
-                                  <Badge variant="outline">
+                                  <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
                                     {item.achievedMarks}/{item.totalMarks}
                                   </Badge>
                                 )}
                                 {item.error && (
-                                  <Badge variant="destructive">Error</Badge>
+                                  <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30">Error</Badge>
                                 )}
                               </div>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1 truncate">
+                            <p className="text-sm text-gray-400 mt-1 truncate">
                               {item.question?.substring(0, 100)}...
                             </p>
                           </div>
@@ -1170,6 +1428,7 @@ const AIMarker = () => {
                             a.click();
                             URL.revokeObjectURL(url);
                           }}
+                          className="bg-gray-800/50 border-gray-700 text-white hover:bg-gray-700"
                         >
                           Export as CSV
                         </Button>
@@ -1185,6 +1444,7 @@ const AIMarker = () => {
                             a.click();
                             URL.revokeObjectURL(url);
                           }}
+                          className="bg-gray-800/50 border-gray-700 text-white hover:bg-gray-700"
                         >
                           Export as JSON
                         </Button>
@@ -1198,17 +1458,22 @@ const AIMarker = () => {
         </main>
 
         <Dialog open={showFollowUpDialog} onOpenChange={setShowFollowUpDialog}>
-          <DialogContent>
+          <DialogContent className="bg-gray-900 border-gray-800 text-white">
             <DialogHeader>
-              <DialogTitle>Ask a Follow-Up Question</DialogTitle>
-              <DialogDescription>Get clarification on the feedback.</DialogDescription>
+              <DialogTitle className="text-white">Ask a Follow-Up Question</DialogTitle>
+              <DialogDescription className="text-gray-400">Get clarification on the feedback.</DialogDescription>
             </DialogHeader>
-            <Textarea placeholder="e.g., Can you explain..." value={followUpQuestion} onChange={e => setFollowUpQuestion(e.target.value)} />
-            {followUpLoading && <Loader2 className="animate-spin" />}
+            <Textarea 
+              placeholder="e.g., Can you explain..." 
+              value={followUpQuestion} 
+              onChange={e => setFollowUpQuestion(e.target.value)}
+              className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-gray-600"
+            />
+            {followUpLoading && <Loader2 className="animate-spin text-white" />}
             {followUpResponse && <div className="prose dark:prose-invert"><MathMarkdown>{followUpResponse}</MathMarkdown></div>}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowFollowUpDialog(false)}>Cancel</Button>
-              <Button onClick={handleFollowUpSubmit} disabled={followUpLoading}>Submit</Button>
+              <Button variant="outline" onClick={() => setShowFollowUpDialog(false)} className="bg-gray-800/50 border-gray-700 text-white hover:bg-gray-700">Cancel</Button>
+              <Button onClick={handleFollowUpSubmit} disabled={followUpLoading} className="bg-blue-600 hover:bg-blue-700 text-white border-0">Submit</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1217,8 +1482,7 @@ const AIMarker = () => {
         
         {showKeyboardShortcuts && <KeyboardShortcuts open={showKeyboardShortcuts} onOpenChange={setShowKeyboardShortcuts} />}
       </div>
-    </EnhancedLayout>
-  );
-};
+    );
+  };
 
 export default AIMarker;

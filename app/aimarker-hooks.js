@@ -36,7 +36,7 @@ export const useSubjectDetection = (subjectKeywords, loading, hasManuallySetSubj
       if (loading) return; // Don't run while loading
       
       const detected = await classifySubjectAI(text);
-      if (detected && detected !== subject && !hasManuallySetSubject.current) {
+      if (detected && detected !== subject && hasManuallySetSubject && !hasManuallySetSubject.current) {
         // Store the previous subject to show a nice transition
         const prevSubject = allSubjects.find(s => s.value === subject)?.label || '';
         const newSubject = allSubjects.find(s => s.value === detected)?.label || '';

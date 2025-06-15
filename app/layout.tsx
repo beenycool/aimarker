@@ -2,9 +2,10 @@ import React from "react";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 import ClientLayoutItems from "@/components/layout/client-layout-items";
 import StagewiseToolbarClient from "@/components/layout/StagewiseToolbarClient";
+import { CookieConsent } from "@/components/gdpr/cookie-consent";
+import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
   title: "GCSE AI Marker | Intelligent Exam Grading",
@@ -80,7 +81,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: dark)" />
       </head>
       <body 
-        className="min-h-screen bg-background text-foreground font-sans antialiased"
+        className="min-h-screen bg-background text-foreground font-sans antialiased flex flex-col"
       >
         <ThemeProvider
           attribute="class"
@@ -88,12 +89,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="fixed top-4 right-4 z-50">
-            <ThemeToggle />
+          <div className="flex-1">
+            {children}
           </div>
-          {children}
+          <Footer />
           <ClientLayoutItems />
           <StagewiseToolbarClient />
+          <CookieConsent />
         </ThemeProvider>
       </body>
     </html>

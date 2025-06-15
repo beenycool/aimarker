@@ -12,8 +12,22 @@ const APIInitializer = dynamic(
   }
 );
 
+// Dynamically import StagewiseToolbarClient to ensure it's only loaded client-side
+const StagewiseToolbarClient = dynamic(
+  () => import("@/components/layout/StagewiseToolbarClient"),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);
+
 const ClientLayoutItems: React.FC = () => {
-  return <APIInitializer />;
+  return (
+    <>
+      <APIInitializer />
+      <StagewiseToolbarClient />
+    </>
+  );
 };
 
 export default ClientLayoutItems;
