@@ -60,7 +60,7 @@ export const createDebouncedFunction = <T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): T & { cancel: () => void } => {
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: number | null = null;
 
   const debouncedFunc = ((...args: Parameters<T>) => {
     if (timeoutId) {
