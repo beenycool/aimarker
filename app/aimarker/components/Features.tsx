@@ -23,7 +23,7 @@ const FeatureCard = ({
   >
     <div className="relative h-full p-6 sm:p-8 rounded-3xl bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 overflow-hidden">
       {/* Gradient Background - Simplified for mobile */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-3 transition-opacity duration-300`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-30 transition-opacity duration-300`} />
       
       {/* Icon Container */}
       <motion.div
